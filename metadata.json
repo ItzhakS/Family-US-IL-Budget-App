@@ -1,0 +1,8 @@
+{
+  "name": "Smart Family Budget",
+  "description": "A comprehensive family budget tracker that replaces spreadsheets. Features AI-powered receipt scanning, spending insights, and interactive charts.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
