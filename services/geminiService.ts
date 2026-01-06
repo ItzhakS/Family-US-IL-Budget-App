@@ -1,10 +1,18 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Transaction } from '../types';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to safely get the client
+const getAIClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    throw new Error("No API Key configured. AI features are unavailable.");
+  }
+  return new GoogleGenAI({ apiKey });
+};
 
 export const parseReceiptImage = async (base64Image: string): Promise<any> => {
   try {
+    const ai = getAIClient();
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: {
@@ -45,12 +53,15 @@ export const parseReceiptImage = async (base64Image: string): Promise<any> => {
     return JSON.parse(response.text || '{}');
   } catch (error) {
     console.error("Error parsing receipt:", error);
-    throw error;
+    // Return empty object so the UI handles it gracefully instead of crashing
+    return {};
   }
 };
 
 export const getSpendingInsights = async (transactions: Transaction[], userQuery: string): Promise<string> => {
   try {
+    const ai = getAIClient();
+    
     // We only send a simplified version of transactions to save tokens
     const simplifiedData = transactions.map(t => `${t.date}: ${t.description} (${t.category}) - ${t.currency === 'ILS' ? '₪' : '$'}${t.amount} [${t.type}]`).join('\n');
     
@@ -69,6 +80,6 @@ export const getSpendingInsights = async (transactions: Transaction[], userQuery
     return response.text || "I couldn't generate an insight at this time.";
   } catch (error) {
     console.error("Error generating insight:", error);
-    return "Sorry, I encountered an error while analyzing your data.";
+    return "AI features are currently unavailable. Please check your API configuration or internet connection.";
   }
 };

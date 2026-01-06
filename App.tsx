@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
-import { Plus, Wallet, LayoutDashboard, Heart, Calendar, Briefcase, CalendarClock, LogOut } from 'lucide-react';
+import { Plus, Wallet, LayoutDashboard, Heart, Calendar, Briefcase, CalendarClock, LogOut, Loader2 } from 'lucide-react';
+import { supabase } from './supabaseClient';
 
 import { Transaction, TransactionType, Currency, User } from './types';
 import { COLORS } from './constants';
@@ -12,12 +12,13 @@ import { RecurringPanel } from './components/RecurringPanel';
 import { InvestmentsPanel } from './components/InvestmentsPanel';
 import { Login } from './components/Login';
 import { YearSelector } from './components/YearSelector';
+import { FamilyManager } from './components/FamilyManager';
+import { AnalysisPanel } from './components/AnalysisPanel';
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(() => {
-    const saved = localStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -27,39 +28,146 @@ const App: React.FC = () => {
   const currentYear = new Date().getFullYear();
   const [selectedYears, setSelectedYears] = useState<number[]>([currentYear]);
 
-  // Load user-specific data when user changes
+  // Check Active Session on Mount
   useEffect(() => {
-    if (user) {
-      const savedData = localStorage.getItem(`transactions_${user.id}`);
-      setTransactions(savedData ? JSON.parse(savedData) : []);
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    } else {
-      setTransactions([]);
-      localStorage.removeItem('currentUser');
-    }
-  }, [user]);
-
-  // Save data to user-specific key
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`transactions_${user.id}`, JSON.stringify(transactions));
-    }
-  }, [transactions, user]);
-
-  const handleLogin = (loggedInUser: User) => {
-    setUser(loggedInUser);
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-  };
-
-  const handleAddTransaction = (newTx: Omit<Transaction, 'id'>) => {
-    const transaction: Transaction = {
-      ...newTx,
-      id: uuidv4()
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+        });
+        fetchTransactions();
+      }
+      setLoading(false);
     };
-    setTransactions(prev => [transaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
+    checkSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+        });
+        fetchTransactions();
+      } else {
+        setUser(null);
+        setTransactions([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchTransactions = async () => {
+    setDataLoading(true);
+    try {
+      // We rely on RLS (Row Level Security) on the backend to filter by Family ID
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Map DB snake_case to TS camelCase if needed, or ensure DB columns match types
+      // Assuming DB columns: id, date, description, amount, category, type, currency, is_recurring, etc.
+      // We need to map boolean flags properly
+      const mappedData: Transaction[] = (data || []).map(t => ({
+        id: t.id,
+        date: t.date,
+        description: t.description,
+        amount: t.amount,
+        category: t.category,
+        type: t.type,
+        currency: t.currency,
+        isMaaserDeductible: t.is_maaser_deductible,
+        isMaaserPayment: t.is_maaser_payment,
+        isTaxDeductible: t.is_tax_deductible,
+        isInvestment: t.is_investment,
+        isRecurring: t.is_recurring
+      }));
+
+      setTransactions(mappedData);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+    } finally {
+      setDataLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const handleAddTransaction = async (newTx: Omit<Transaction, 'id'>) => {
+    try {
+        // Optimistic update
+        const tempId = Math.random().toString();
+        const optimisticTx = { ...newTx, id: tempId };
+        setTransactions(prev => [optimisticTx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
+        // Determine current user family_id (usually handled by DB default or trigger, 
+        // but explicit passing is safer if table RLS requires it)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("No user");
+
+        const { data, error } = await supabase
+            .from('transactions')
+            .insert({
+                date: newTx.date,
+                description: newTx.description,
+                amount: newTx.amount,
+                category: newTx.category,
+                type: newTx.type,
+                currency: newTx.currency,
+                is_recurring: newTx.isRecurring,
+                is_maaser_deductible: newTx.isMaaserDeductible,
+                is_maaser_payment: newTx.isMaaserPayment,
+                is_tax_deductible: newTx.isTaxDeductible,
+                is_investment: newTx.isInvestment,
+                user_id: user.id // Supabase will likely map this to family_id via triggers
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        // Replace temp ID with real ID
+        setTransactions(prev => prev.map(t => t.id === tempId ? {
+            ...t,
+            id: data.id,
+            // ensure booleans are kept
+            isMaaserDeductible: data.is_maaser_deductible,
+            isMaaserPayment: data.is_maaser_payment,
+            isTaxDeductible: data.is_tax_deductible,
+            isInvestment: data.is_investment,
+            isRecurring: data.is_recurring
+        } : t));
+
+    } catch (err) {
+        console.error("Error saving:", err);
+        fetchTransactions(); // Revert on error
+        alert("Failed to save transaction. Please try again.");
+    }
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+     if (!window.confirm("Are you sure you want to delete this?")) return;
+     
+     const prev = [...transactions];
+     setTransactions(transactions.filter(t => t.id !== id));
+
+     const { error } = await supabase.from('transactions').delete().eq('id', id);
+     if (error) {
+         console.error("Error deleting:", error);
+         setTransactions(prev); // Revert
+         alert("Failed to delete.");
+     }
   };
 
   // --- Filtering Logic ---
@@ -100,13 +208,7 @@ const App: React.FC = () => {
   const usdSummary = getSummary('USD');
 
   const getMonthlyData = (curr: Currency) => {
-     // Generate months based on selected years. If 1 year selected -> Jan-Dec. If multiple -> just show data points available?
-     // For simplicity in the chart, if multiple years are selected, we show chronological data of those years.
-     
-     // 1. Gather all YYYY-MM keys from selected years
      const data: Record<string, { name: string; income: number; expense: number; sortKey: string }> = {};
-     
-     // Initialize empty months for selected years
      selectedYears.sort((a,b) => a-b).forEach(year => {
         for(let m=1; m<=12; m++) {
             const key = `${year}-${String(m).padStart(2, '0')}`;
@@ -138,8 +240,12 @@ const App: React.FC = () => {
       .sort((a, b) => b.value - a.value);
   };
 
+  if (loading) {
+      return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin text-indigo-600" size={32} /></div>;
+  }
+
   if (!user) {
-    return <Login onLogin={handleLogin} />;
+    return <Login />;
   }
 
   return (
@@ -166,9 +272,10 @@ const App: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-3">
+                {dataLoading && <Loader2 className="animate-spin text-indigo-600 hidden sm:block" size={16} />}
                 <div className="hidden md:flex flex-col items-end mr-2">
                     <span className="text-xs font-bold text-gray-700">{user.name}</span>
-                    <span className="text-[10px] text-gray-400">Synced to {user.email}</span>
+                    <span className="text-[10px] text-gray-400">{user.email}</span>
                 </div>
                 <button
                     onClick={() => setIsFormOpen(true)}
@@ -190,6 +297,12 @@ const App: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        {/* Family Invite Banner */}
+        <div className="flex justify-end mb-4">
+            <FamilyManager />
+        </div>
+
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl mb-8 w-full sm:w-auto overflow-x-auto">
           <button
@@ -336,6 +449,11 @@ const App: React.FC = () => {
                </div>
             </div>
 
+            {/* AI Analysis Row */}
+            <div className="lg:col-span-2">
+                 <AnalysisPanel transactions={yearFilteredTransactions} />
+            </div>
+
           </div>
         )}
 
@@ -343,9 +461,6 @@ const App: React.FC = () => {
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-4">
                   <h3 className="font-bold text-gray-900 border-b pb-2">₪ Shekels (ILS)</h3>
-                  {/* Note: We pass yearFilteredTransactions here so the Maaser view respects the selected year 
-                      If you want Maaser to ALWAYS show running balance from ALL time, pass 'transactions' instead. 
-                      However, typically UI views reflect the filter. */}
                   <MaaserTracker transactions={yearFilteredTransactions} currency="ILS" />
               </div>
               <div className="space-y-4">
