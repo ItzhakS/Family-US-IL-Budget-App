@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
-import { Wallet, Loader2 } from 'lucide-react';
+import { Wallet, Loader2, AlertCircle } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setMessage('');
+    setIsError(false);
     
     // Magic Link Login
     const { error } = await supabase.auth.signInWithOtp({
@@ -20,7 +23,12 @@ export const Login: React.FC = () => {
     });
 
     if (error) {
-      setMessage(error.message);
+      setIsError(true);
+      if (error.message.includes('Unsupported provider')) {
+        setMessage('Configuration Error: The Email provider is not enabled. Please enable "Email" in your Supabase Dashboard under Authentication > Providers.');
+      } else {
+        setMessage(error.message);
+      }
     } else {
       setMessage('Check your email for the login link!');
     }
@@ -28,12 +36,23 @@ export const Login: React.FC = () => {
   };
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
+    setMessage('');
+    setIsError(false);
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: window.location.origin,
       },
     });
+    
+    if (error) {
+       setIsError(true);
+       if (error.message.includes('Unsupported provider')) {
+         setMessage('Configuration Error: Google Login is disabled. Enable "Google" in Supabase Dashboard > Authentication > Providers.');
+       } else {
+         setMessage(error.message);
+       }
+    }
   };
 
   return (
@@ -46,11 +65,14 @@ export const Login: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Smart Family Budget</h1>
         <p className="text-gray-500 mb-8">Sign in to sync your budget across devices</p>
 
-        {message ? (
-          <div className="bg-green-50 text-green-700 p-4 rounded-lg mb-6 text-sm">
-            {message}
+        {message && (
+          <div className={`p-4 rounded-lg mb-6 text-sm text-left flex items-start gap-3 ${isError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+            {isError && <AlertCircle className="shrink-0 mt-0.5" size={16} />}
+            <div>{message}</div>
           </div>
-        ) : (
+        )}
+
+        {!message || isError ? (
           <form onSubmit={handleEmailLogin} className="space-y-4 mb-6">
             <input
               type="email"
@@ -68,7 +90,7 @@ export const Login: React.FC = () => {
               {loading ? <Loader2 className="animate-spin" size={20} /> : 'Send Magic Link'}
             </button>
           </form>
-        )}
+        ) : null}
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
