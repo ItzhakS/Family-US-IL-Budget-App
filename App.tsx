@@ -36,8 +36,26 @@ const App: React.FC = () => {
       return;
     }
 
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+    // Check if this is an OAuth callback (has hash fragment with access_token)
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const isOAuthCallback = hashParams.has('access_token') || hashParams.has('error');
+    
+    // Handle OAuth errors in the URL
+    if (hashParams.has('error')) {
+      const errorDescription = hashParams.get('error_description') || hashParams.get('error');
+      console.error('OAuth error:', errorDescription);
+      // Clear the hash and show login page
+      window.history.replaceState(null, '', window.location.pathname);
+      setLoading(false);
+      // Still set up the subscription for future auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {});
+      return () => subscription.unsubscribe();
+    }
+
+    // Listen for auth changes FIRST (this will catch OAuth callbacks)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.email);
+      
       if (session?.user) {
         setUser({
           id: session.user.id,
@@ -45,26 +63,52 @@ const App: React.FC = () => {
           email: session.user.email || '',
         });
         fetchTransactions();
+        // Clear the hash fragment after successful login
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+        setLoading(false);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setTransactions([]);
+        setLoading(false);
       }
-      setLoading(false);
+    });
+
+    // Check existing session (for non-OAuth scenarios like magic link or page refresh)
+    const checkSession = async () => {
+      // If this is an OAuth callback, wait a moment for the auth state change to fire
+      if (isOAuthCallback) {
+        // Give Supabase time to process the hash fragment
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error('Session error:', error);
+      }
+      
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+        });
+        fetchTransactions();
+        // Clear the hash fragment after successful login
+        if (window.location.hash) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+      }
+      
+      // Set loading to false after checking session
+      // If it was an OAuth callback and we have a session, loading was already set to false in onAuthStateChange
+      if (!isOAuthCallback || !session?.user) {
+        setLoading(false);
+      }
     };
 
     checkSession();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-        });
-        fetchTransactions();
-      } else {
-        setUser(null);
-        setTransactions([]);
-      }
-    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -119,10 +163,18 @@ const App: React.FC = () => {
         const optimisticTx = { ...newTx, id: tempId };
         setTransactions(prev => [optimisticTx, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
-        // Determine current user family_id (usually handled by DB default or trigger, 
-        // but explicit passing is safer if table RLS requires it)
+        // Get current user's family_id from profile
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) throw new Error("No user");
+
+        // Get family_id from user's profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('family_id')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile) throw new Error("Could not fetch user profile");
 
         const { data, error } = await supabase
             .from('transactions')
@@ -138,7 +190,7 @@ const App: React.FC = () => {
                 is_maaser_payment: newTx.isMaaserPayment,
                 is_tax_deductible: newTx.isTaxDeductible,
                 is_investment: newTx.isInvestment,
-                user_id: user.id // Supabase will likely map this to family_id via triggers
+                family_id: profile.family_id
             })
             .select()
             .single();

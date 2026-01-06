@@ -38,6 +38,8 @@ export const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     setMessage('');
     setIsError(false);
+    setLoading(true);
+    
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -47,12 +49,14 @@ export const Login: React.FC = () => {
     
     if (error) {
        setIsError(true);
+       setLoading(false);
        if (error.message.includes('Unsupported provider')) {
          setMessage('Configuration Error: Google Login is disabled. Enable "Google" in Supabase Dashboard > Authentication > Providers.');
        } else {
          setMessage(error.message);
        }
     }
+    // Note: If successful, user will be redirected to Google, so we don't set loading to false here
   };
 
   return (
