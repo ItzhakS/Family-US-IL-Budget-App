@@ -1,27 +1,66 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Transaction, TransactionType, ReceiptData, Currency } from '../types';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../constants';
 import { X, Loader2, Camera } from 'lucide-react';
 import { parseReceiptImage } from '../services/geminiService';
 
 interface TransactionFormProps {
+  transaction?: Transaction;
   onSave: (transaction: Omit<Transaction, 'id'>) => void;
   onClose: () => void;
 }
 
-export const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onClose }) => {
-  const [type, setType] = useState<TransactionType>(TransactionType.EXPENSE);
-  const [currency, setCurrency] = useState<Currency>('ILS');
-  const [amount, setAmount] = useState<string>('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [category, setCategory] = useState(EXPENSE_CATEGORIES[0]);
+export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, onSave, onClose }) => {
+  const [type, setType] = useState<TransactionType>(transaction?.type || TransactionType.EXPENSE);
+  const [currency, setCurrency] = useState<Currency>(transaction?.currency || 'ILS');
+  const [amount, setAmount] = useState<string>(transaction?.amount.toString() || '');
+  const [description, setDescription] = useState(transaction?.description || '');
+  const [date, setDate] = useState(transaction?.date || new Date().toISOString().split('T')[0]);
+  const [category, setCategory] = useState(transaction?.category || EXPENSE_CATEGORIES[0]);
   
   // Logic Flags
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(transaction?.isRecurring || false);
   
-  // Expense Classification
-  const [expenseClass, setExpenseClass] = useState<'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'maaser_payment'>('household');
+  // Expense Classification helper
+  const getExpenseClass = (tx?: Transaction): 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'maaser_payment' => {
+    if (!tx) return 'household';
+    if (tx.isMaaserPayment) return 'maaser_payment';
+    if (tx.isMaaserDeductible) return 'maaser_deductible';
+    if (tx.isTaxDeductible) return 'tax_deductible';
+    if (tx.isInvestment) return 'investment';
+    return 'household';
+  };
+  const [expenseClass, setExpenseClass] = useState<'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'maaser_payment'>(getExpenseClass(transaction));
+
+  // Update form when transaction prop changes
+  useEffect(() => {
+    if (transaction) {
+      setType(transaction.type);
+      setCurrency(transaction.currency);
+      setAmount(transaction.amount.toString());
+      setDescription(transaction.description);
+      setDate(transaction.date);
+      setCategory(transaction.category);
+      setIsRecurring(transaction.isRecurring || false);
+      // Determine expense class
+      let newExpenseClass: 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'maaser_payment' = 'household';
+      if (transaction.isMaaserPayment) newExpenseClass = 'maaser_payment';
+      else if (transaction.isMaaserDeductible) newExpenseClass = 'maaser_deductible';
+      else if (transaction.isTaxDeductible) newExpenseClass = 'tax_deductible';
+      else if (transaction.isInvestment) newExpenseClass = 'investment';
+      setExpenseClass(newExpenseClass);
+    } else {
+      // Reset to defaults when no transaction (new transaction)
+      setType(TransactionType.EXPENSE);
+      setCurrency('ILS');
+      setAmount('');
+      setDescription('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setCategory(EXPENSE_CATEGORIES[0]);
+      setIsRecurring(false);
+      setExpenseClass('household');
+    }
+  }, [transaction]);
 
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +130,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onClos
           <X size={24} />
         </button>
         
-        <h2 className="text-xl font-bold mb-6 text-gray-800">Add Transaction</h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-800">{transaction ? 'Edit Transaction' : 'Add Transaction'}</h2>
 
         {/* AI Receipt Scan */}
         <div className="mb-6">
@@ -311,7 +350,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ onSave, onClos
             type="submit"
             className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-xl transition-colors mt-6"
           >
-            Save Transaction
+            {transaction ? 'Update Transaction' : 'Save Transaction'}
           </button>
         </form>
       </div>

@@ -1,13 +1,14 @@
 import React from 'react';
 import { Transaction, TransactionType } from '../types';
-import { Trash2, ArrowUpRight, ArrowDownLeft, Receipt, HeartHandshake } from 'lucide-react';
+import { Trash2, ArrowUpRight, ArrowDownLeft, Receipt, HeartHandshake, Edit } from 'lucide-react';
 
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
 }
 
-export const TransactionList: React.FC<TransactionListProps> = ({ transactions, onDelete }) => {
+export const TransactionList: React.FC<TransactionListProps> = ({ transactions, onDelete, onEdit }) => {
   if (transactions.length === 0) {
     return (
       <div className="text-center py-12 bg-white rounded-xl border border-gray-100 shadow-sm">
@@ -64,13 +65,24 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
                   </div>
                 </td>
                 <td className="py-4 px-6 text-right">
-                  <button
-                    onClick={() => onDelete(t.id)}
-                    className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
-                    title="Delete transaction"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="flex items-center justify-end gap-2">
+                    {onEdit && (
+                      <button
+                        onClick={() => onEdit(t.id)}
+                        className="text-gray-400 hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Edit transaction"
+                      >
+                        <Edit size={16} />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onDelete(t.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete transaction"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

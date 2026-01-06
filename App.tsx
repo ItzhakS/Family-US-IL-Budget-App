@@ -23,6 +23,7 @@ const App: React.FC = () => {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'maaser' | 'recurring' | 'investments' | 'yearly'>('dashboard');
   
   // Year Filtering State
@@ -243,6 +244,42 @@ const App: React.FC = () => {
     }
   };
 
+  const handleUpdateTransaction = async (id: string, updatedTx: Omit<Transaction, 'id'>) => {
+    if (!isSupabaseConfigured) return;
+    try {
+        // Optimistic update
+        const prev = [...transactions];
+        setTransactions(prev => prev.map(t => t.id === id ? {
+            ...t,
+            ...updatedTx
+        } : t).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+
+        const { error } = await supabase
+            .from('transactions')
+            .update({
+                date: updatedTx.date,
+                description: updatedTx.description,
+                amount: updatedTx.amount,
+                category: updatedTx.category,
+                type: updatedTx.type,
+                currency: updatedTx.currency,
+                is_recurring: updatedTx.isRecurring,
+                is_maaser_deductible: updatedTx.isMaaserDeductible,
+                is_maaser_payment: updatedTx.isMaaserPayment,
+                is_tax_deductible: updatedTx.isTaxDeductible,
+                is_investment: updatedTx.isInvestment
+            })
+            .eq('id', id);
+
+        if (error) throw error;
+
+    } catch (err) {
+        console.error("Error updating:", err);
+        fetchTransactions(); // Revert on error
+        alert("Failed to update transaction. Please try again.");
+    }
+  };
+
   const handleDeleteTransaction = async (id: string) => {
      if (!isSupabaseConfigured) return;
      if (!window.confirm("Are you sure you want to delete this?")) return;
@@ -412,7 +449,10 @@ const App: React.FC = () => {
                     <span className="text-[10px] text-gray-400">{user.email}</span>
                 </div>
                 <button
-                    onClick={() => setIsFormOpen(true)}
+                    onClick={() => {
+                      setEditingTransaction(null);
+                      setIsFormOpen(true);
+                    }}
                     className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
                 >
                     <Plus size={18} />
@@ -583,15 +623,21 @@ const App: React.FC = () => {
                </div>
             </div>
 
-            {/* AI Analysis Row */}
-            <div className="lg:col-span-2">
-                 <AnalysisPanel transactions={yearFilteredTransactions} />
-            </div>
-
             {/* Transaction List Row */}
             <div className="lg:col-span-2 space-y-4">
                  <h2 className="text-lg font-bold text-gray-900 border-b pb-2 border-gray-100">Recent Transactions</h2>
-                 <TransactionList transactions={yearFilteredTransactions} onDelete={handleDeleteTransaction} />
+                 <TransactionList transactions={yearFilteredTransactions} onDelete={handleDeleteTransaction} onEdit={(id) => {
+                   const transaction = transactions.find(t => t.id === id);
+                   if (transaction) {
+                     setEditingTransaction(transaction);
+                     setIsFormOpen(true);
+                   }
+                 }} />
+            </div>
+
+            {/* AI Analysis Row */}
+            <div className="lg:col-span-2">
+                 <AnalysisPanel transactions={yearFilteredTransactions} />
             </div>
 
           </div>
@@ -647,11 +693,25 @@ const App: React.FC = () => {
         )}
       </main>
 
-      {/* Add Transaction Modal */}
+      {/* Add/Edit Transaction Modal */}
       {isFormOpen && (
         <TransactionForm
-          onSave={handleAddTransaction}
-          onClose={() => setIsFormOpen(false)}
+          transaction={editingTransaction || undefined}
+          onSave={editingTransaction 
+            ? (tx) => {
+                handleUpdateTransaction(editingTransaction.id, tx);
+                setEditingTransaction(null);
+                setIsFormOpen(false);
+              }
+            : (tx) => {
+                handleAddTransaction(tx);
+                setIsFormOpen(false);
+              }
+          }
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingTransaction(null);
+          }}
         />
       )}
     </div>
