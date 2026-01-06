@@ -39,8 +39,16 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
                 <td className="py-4 px-6 text-sm text-gray-500 whitespace-nowrap">{t.date}</td>
                 <td className="py-4 px-6 text-sm text-gray-900 font-medium">
                     <div className="flex items-center gap-2">
-                        {t.isMaaserPayment && <HeartHandshake size={14} className="text-pink-500" title="Ma'aser Payment" />}
-                        {(t.isMaaserDeductible || t.isTaxDeductible) && <Receipt size={14} className="text-amber-500" title="Deductible Expense" />}
+                        {t.isMaaserPayment && (
+                          <span title="Ma'aser Payment" className="flex items-center">
+                            <HeartHandshake size={14} className="text-pink-500" />
+                          </span>
+                        )}
+                        {(t.isMaaserDeductible || t.isTaxDeductible) && (
+                          <span title="Deductible Expense" className="flex items-center">
+                            <Receipt size={14} className="text-amber-500" />
+                          </span>
+                        )}
                         {t.description}
                     </div>
                 </td>
