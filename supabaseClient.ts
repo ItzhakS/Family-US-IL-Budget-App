@@ -1,8 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 
-// These will be provided by your Supabase project settings
-// When deploying to Vercel, these become Environment Variables
-const supabaseUrl = process.env.REACT_APP_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+// Safe access to process.env for various environments
+const getEnv = (key: string) => {
+  try {
+    return process.env[key];
+  } catch {
+    return '';
+  }
+};
+
+// Use placeholders if env vars are missing to prevent immediate crash
+// This allows App.tsx to check configuration and show a setup guide
+const envUrl = getEnv('REACT_APP_SUPABASE_URL') || getEnv('SUPABASE_URL');
+const envKey = getEnv('REACT_APP_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY');
+
+// Check if properly configured
+export const isSupabaseConfigured = !!(envUrl && envKey);
+
+const supabaseUrl = envUrl || 'https://placeholder.supabase.co';
+const supabaseAnonKey = envKey || 'placeholder-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);

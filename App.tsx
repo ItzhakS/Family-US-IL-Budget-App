@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
-import { Plus, Wallet, LayoutDashboard, Heart, Calendar, Briefcase, CalendarClock, LogOut, Loader2 } from 'lucide-react';
-import { supabase } from './supabaseClient';
+import { Plus, Wallet, LayoutDashboard, Heart, Calendar, Briefcase, CalendarClock, LogOut, Loader2, Database, Key } from 'lucide-react';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 import { Transaction, TransactionType, Currency, User } from './types';
 import { COLORS } from './constants';
 import { TransactionForm } from './components/TransactionForm';
+import { TransactionList } from './components/TransactionList';
 import { StatCard } from './components/StatCard';
 import { MaaserTracker } from './components/MaaserTracker';
 import { RecurringPanel } from './components/RecurringPanel';
@@ -30,6 +31,11 @@ const App: React.FC = () => {
 
   // Check Active Session on Mount
   useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
@@ -64,6 +70,7 @@ const App: React.FC = () => {
   }, []);
 
   const fetchTransactions = async () => {
+    if (!isSupabaseConfigured) return;
     setDataLoading(true);
     try {
       // We rely on RLS (Row Level Security) on the backend to filter by Family ID
@@ -105,6 +112,7 @@ const App: React.FC = () => {
   };
 
   const handleAddTransaction = async (newTx: Omit<Transaction, 'id'>) => {
+    if (!isSupabaseConfigured) return;
     try {
         // Optimistic update
         const tempId = Math.random().toString();
@@ -157,6 +165,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteTransaction = async (id: string) => {
+     if (!isSupabaseConfigured) return;
      if (!window.confirm("Are you sure you want to delete this?")) return;
      
      const prev = [...transactions];
@@ -239,6 +248,52 @@ const App: React.FC = () => {
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
   };
+
+  // --- RENDERING STATES ---
+
+  if (!isSupabaseConfigured) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+            <Database className="text-white" size={32} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Setup Required</h1>
+          <p className="text-gray-600 mb-6">
+            Your family budget app is ready, but it needs a database to store your data.
+          </p>
+          
+          <div className="space-y-4">
+            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+              <h3 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                <LayoutDashboard size={18} /> 1. Create Supabase Project
+              </h3>
+              <p className="text-sm text-indigo-800 mb-2">
+                Go to <a href="https://supabase.com" target="_blank" className="underline font-bold">supabase.com</a>, create a free project, and copy the SQL code provided in the deployment instructions.
+              </p>
+            </div>
+
+             <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+              <h3 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                <Key size={18} /> 2. Connect to App
+              </h3>
+              <p className="text-sm text-indigo-800">
+                If deploying to Vercel, add these Environment Variables:
+              </p>
+              <ul className="text-xs font-mono bg-white p-3 rounded mt-2 border border-indigo-100 text-gray-600">
+                <li className="mb-1">REACT_APP_SUPABASE_URL</li>
+                <li>REACT_APP_SUPABASE_ANON_KEY</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center text-sm text-gray-500">
+            Once you add these keys and refresh, the app will start automatically.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
       return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Loader2 className="animate-spin text-indigo-600" size={32} /></div>;
@@ -452,6 +507,12 @@ const App: React.FC = () => {
             {/* AI Analysis Row */}
             <div className="lg:col-span-2">
                  <AnalysisPanel transactions={yearFilteredTransactions} />
+            </div>
+
+            {/* Transaction List Row */}
+            <div className="lg:col-span-2 space-y-4">
+                 <h2 className="text-lg font-bold text-gray-900 border-b pb-2 border-gray-100">Recent Transactions</h2>
+                 <TransactionList transactions={yearFilteredTransactions} onDelete={handleDeleteTransaction} />
             </div>
 
           </div>
