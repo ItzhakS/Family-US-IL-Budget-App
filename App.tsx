@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Plus, Wallet, LayoutDashboard, Heart, Calendar, Briefcase, CalendarClock, LogOut, Loader2, Database, Key } from 'lucide-react';
-import { supabase, isSupabaseConfigured } from './supabaseClient';
+import { supabase, isSupabaseConfigured, supabaseUrl, supabaseAnonKey } from './supabaseClient';
 
 import { Transaction, TransactionType, Currency, User } from './types';
 import { COLORS } from './constants';
@@ -254,24 +254,65 @@ const App: React.FC = () => {
             ...updatedTx
         } : t).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
-        const { error } = await supabase
-            .from('transactions')
-            .update({
-                date: updatedTx.date,
-                description: updatedTx.description,
-                amount: updatedTx.amount,
-                category: updatedTx.category,
-                type: updatedTx.type,
-                currency: updatedTx.currency,
-                is_recurring: updatedTx.isRecurring,
-                is_maaser_deductible: updatedTx.isMaaserDeductible,
-                is_maaser_payment: updatedTx.isMaaserPayment,
-                is_tax_deductible: updatedTx.isTaxDeductible,
-                is_investment: updatedTx.isInvestment
-            })
-            .eq('id', id);
+        // Get the current transaction to preserve family_id
+        const currentTransaction = transactions.find(t => t.id === id);
+        if (!currentTransaction) {
+          throw new Error("Transaction not found");
+        }
 
-        if (error) throw error;
+        // Get current user's session for auth
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          throw new Error("No active session");
+        }
+
+        // Get family_id from user's profile
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) throw new Error("No user");
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('family_id')
+          .eq('id', user.id)
+          .single();
+
+        if (!profile) throw new Error("Could not fetch user profile");
+
+        // Use PUT request via REST API
+        const response = await fetch(
+          `${supabaseUrl}/rest/v1/transactions?id=eq.${id}`,
+          {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': supabaseAnonKey,
+              'Authorization': `Bearer ${session.access_token}`,
+              'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+              date: updatedTx.date,
+              description: updatedTx.description,
+              amount: updatedTx.amount,
+              category: updatedTx.category,
+              type: updatedTx.type,
+              currency: updatedTx.currency,
+              is_recurring: updatedTx.isRecurring,
+              is_maaser_deductible: updatedTx.isMaaserDeductible,
+              is_maaser_payment: updatedTx.isMaaserPayment,
+              is_tax_deductible: updatedTx.isTaxDeductible,
+              is_investment: updatedTx.isInvestment,
+              family_id: profile.family_id // Preserve family_id
+            })
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Update failed: ${response.status} ${errorText}`);
+        }
+
+        // Refresh to get updated data
+        await fetchTransactions();
 
     } catch (err) {
         console.error("Error updating:", err);

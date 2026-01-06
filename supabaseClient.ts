@@ -17,8 +17,8 @@ const envKey = getEnv('REACT_APP_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KE
 // Check if properly configured
 export const isSupabaseConfigured = !!(envUrl && envKey);
 
-const supabaseUrl = envUrl || 'https://placeholder.supabase.co';
-const supabaseAnonKey = envKey || 'placeholder-key';
+export const supabaseUrl = envUrl || 'https://placeholder.supabase.co';
+export const supabaseAnonKey = envKey || 'placeholder-key';
 
 // Create Supabase client with localStorage for session persistence
 // This ensures sessions persist across tabs and browser restarts

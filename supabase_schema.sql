@@ -89,6 +89,11 @@ using (family_id in (select family_id from profiles where id = auth.uid()));
 -- Policy: Users can insert transactions (trigger handles family_id)
 create policy "Insert transactions" on transactions for insert with check (true);
 
+-- Policy: Users can update transactions belonging to their family
+create policy "Update family transactions" on transactions for update 
+using (family_id in (select family_id from profiles where id = auth.uid()))
+with check (family_id in (select family_id from profiles where id = auth.uid()));
+
 -- Policy: Users can delete transactions belonging to their family
 create policy "Delete family transactions" on transactions for delete 
 using (family_id in (select family_id from profiles where id = auth.uid()));
