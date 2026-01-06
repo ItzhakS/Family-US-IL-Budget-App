@@ -20,4 +20,14 @@ export const isSupabaseConfigured = !!(envUrl && envKey);
 const supabaseUrl = envUrl || 'https://placeholder.supabase.co';
 const supabaseAnonKey = envKey || 'placeholder-key';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create Supabase client with localStorage for session persistence
+// This ensures sessions persist across tabs and browser restarts
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    // Supabase will automatically use BroadcastChannel for cross-tab synchronization
+  },
+});

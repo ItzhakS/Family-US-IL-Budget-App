@@ -8,17 +8,26 @@ export const Login: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isError, setIsError] = useState(false);
 
+  // Get the proper redirect URL - use origin + pathname to stay on the same page
+  const getRedirectUrl = () => {
+    // Build redirect URL from origin and pathname (exclude hash and query params for cleaner redirect)
+    // This ensures we redirect back to the app, not to Vercel's login page
+    const url = new URL(window.location.href);
+    return `${url.origin}${url.pathname}`;
+  };
+
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
     setIsError(false);
     
-    // Magic Link Login
+    // Magic Link Login - use full URL to ensure proper redirect
+    const redirectUrl = getRedirectUrl();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: redirectUrl,
       },
     });
 
@@ -40,10 +49,12 @@ export const Login: React.FC = () => {
     setIsError(false);
     setLoading(true);
     
+    // OAuth redirect - use full URL to ensure proper redirect
+    const redirectUrl = getRedirectUrl();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: redirectUrl,
       },
     });
     

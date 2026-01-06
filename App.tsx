@@ -110,7 +110,34 @@ const App: React.FC = () => {
 
     checkSession();
 
-    return () => subscription.unsubscribe();
+    // Listen for storage changes to sync sessions across tabs
+    // Note: Supabase also uses BroadcastChannel for cross-tab sync, but this is a fallback
+    const handleStorageChange = async (e: StorageEvent) => {
+      // Check if the storage change is related to Supabase auth
+      // Supabase uses keys like 'sb-<project-ref>-auth-token' or similar
+      if (e.key && (e.key.includes('supabase') || e.key.startsWith('sb-'))) {
+        // Re-check session when auth storage changes in another tab
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser({
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+            email: session.user.email || '',
+          });
+          fetchTransactions();
+        } else {
+          setUser(null);
+          setTransactions([]);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const fetchTransactions = async () => {
