@@ -254,31 +254,24 @@ const App: React.FC = () => {
             ...updatedTx
         } : t).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
-        // Get the current transaction to preserve family_id
-        const currentTransaction = transactions.find(t => t.id === id);
-        if (!currentTransaction) {
-          throw new Error("Transaction not found");
-        }
-
         // Get current user's session for auth
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) {
           throw new Error("No active session");
         }
 
-        // Get family_id from user's profile
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) throw new Error("No user");
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('family_id')
-          .eq('id', user.id)
+        // Fetch the current transaction from DB to get all fields including created_at
+        const { data: currentDbTransaction, error: fetchError } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('id', id)
           .single();
 
-        if (!profile) throw new Error("Could not fetch user profile");
+        if (fetchError || !currentDbTransaction) {
+          throw new Error("Transaction not found in database");
+        }
 
-        // Use PUT request via REST API
+        // Use PUT request via REST API - include all fields for complete row replacement
         const response = await fetch(
           `${supabaseUrl}/rest/v1/transactions?id=eq.${id}`,
           {
@@ -290,18 +283,20 @@ const App: React.FC = () => {
               'Prefer': 'return=representation'
             },
             body: JSON.stringify({
+              id: id,
+              created_at: currentDbTransaction.created_at, // Preserve created_at
               date: updatedTx.date,
               description: updatedTx.description,
               amount: updatedTx.amount,
               category: updatedTx.category,
               type: updatedTx.type,
               currency: updatedTx.currency,
-              is_recurring: updatedTx.isRecurring,
-              is_maaser_deductible: updatedTx.isMaaserDeductible,
-              is_maaser_payment: updatedTx.isMaaserPayment,
-              is_tax_deductible: updatedTx.isTaxDeductible,
-              is_investment: updatedTx.isInvestment,
-              family_id: profile.family_id // Preserve family_id
+              is_recurring: updatedTx.isRecurring ?? false,
+              is_maaser_deductible: updatedTx.isMaaserDeductible ?? false,
+              is_maaser_payment: updatedTx.isMaaserPayment ?? false,
+              is_tax_deductible: updatedTx.isTaxDeductible ?? false,
+              is_investment: updatedTx.isInvestment ?? false,
+              family_id: currentDbTransaction.family_id // Preserve family_id from DB
             })
           }
         );
