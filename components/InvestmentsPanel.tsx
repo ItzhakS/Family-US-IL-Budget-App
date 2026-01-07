@@ -10,6 +10,9 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
   // Filter for Investments
   const investments = transactions.filter(t => t.type === TransactionType.EXPENSE && t.isInvestment);
   
+  // Filter for Tax Savings
+  const taxSavings = transactions.filter(t => t.type === TransactionType.EXPENSE && t.isTaxSavings);
+  
   // Filter for Business Expenses (Tax Deductible Only)
   const taxDeductibles = transactions.filter(t => t.type === TransactionType.EXPENSE && t.isTaxDeductible);
 
@@ -21,6 +24,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
   };
 
   const invTotals = getTotals(investments);
+  const taxSavingsTotals = getTotals(taxSavings);
   const taxTotals = getTotals(taxDeductibles);
 
   return (
@@ -32,7 +36,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
           <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
             <TrendingUp size={24} />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Investments & Tax Savings</h2>
+          <h2 className="text-xl font-bold text-gray-900">Investments</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -60,6 +64,43 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
             </div>
           ))}
           {investments.length === 0 && <p className="text-sm text-gray-400">No investment records yet.</p>}
+        </div>
+      </div>
+
+      {/* Tax Savings Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
+            <TrendingUp size={24} />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900">Tax Savings</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <p className="text-sm text-purple-600 font-medium mb-1">Total ILS Saved</p>
+            <p className="text-2xl font-bold text-gray-900">₪{taxSavingsTotals.ils.toLocaleString()}</p>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <p className="text-sm text-purple-600 font-medium mb-1">Total USD Saved</p>
+            <p className="text-2xl font-bold text-gray-900">${taxSavingsTotals.usd.toLocaleString()}</p>
+          </div>
+        </div>
+
+        <h3 className="font-semibold text-gray-700 mb-3">Recent Deposits</h3>
+        <div className="space-y-2">
+          {taxSavings.slice(0, 5).map(t => (
+            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm">
+              <div className="flex flex-col">
+                 <span className="font-medium text-gray-900">{t.description}</span>
+                 <span className="text-xs text-gray-500">{t.date}</span>
+              </div>
+              <span className="font-bold text-purple-600">
+                {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
+              </span>
+            </div>
+          ))}
+          {taxSavings.length === 0 && <p className="text-sm text-gray-400">No tax savings records yet.</p>}
         </div>
       </div>
 

@@ -168,6 +168,7 @@ const App: React.FC = () => {
         isMaaserPayment: t.is_maaser_payment,
         isTaxDeductible: t.is_tax_deductible,
         isInvestment: t.is_investment,
+        isTaxSavings: t.is_tax_savings,
         isRecurring: t.is_recurring
       }));
 
@@ -218,6 +219,7 @@ const App: React.FC = () => {
                 is_maaser_payment: newTx.isMaaserPayment,
                 is_tax_deductible: newTx.isTaxDeductible,
                 is_investment: newTx.isInvestment,
+                is_tax_savings: newTx.isTaxSavings,
                 family_id: profile.family_id
             })
             .select()
@@ -234,6 +236,7 @@ const App: React.FC = () => {
             isMaaserPayment: data.is_maaser_payment,
             isTaxDeductible: data.is_tax_deductible,
             isInvestment: data.is_investment,
+            isTaxSavings: data.is_tax_savings,
             isRecurring: data.is_recurring
         } : t));
 
@@ -296,6 +299,7 @@ const App: React.FC = () => {
               is_maaser_payment: updatedTx.isMaaserPayment ?? false,
               is_tax_deductible: updatedTx.isTaxDeductible ?? false,
               is_investment: updatedTx.isInvestment ?? false,
+              is_tax_savings: updatedTx.isTaxSavings ?? false,
               family_id: currentDbTransaction.family_id // Preserve family_id from DB
             })
           }
@@ -341,12 +345,13 @@ const App: React.FC = () => {
     });
   }, [transactions, selectedYears]);
 
-  // 2. Logic for Dashboard (Household only, no Business Deductibles, no Investments)
+  // 2. Logic for Dashboard (Household only, no Business Deductibles, no Investments, no Tax Savings)
   const dashboardTransactions = useMemo(() => {
     return yearFilteredTransactions.filter(t => 
       !t.isMaaserDeductible && 
       !t.isTaxDeductible && 
-      !t.isInvestment
+      !t.isInvestment &&
+      !t.isTaxSavings
     );
   }, [yearFilteredTransactions]);
 

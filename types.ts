@@ -25,7 +25,8 @@ export interface Transaction {
   isMaaserDeductible?: boolean; // Business exp that reduces Ma'aser obligation (Show in Maaser tab only)
   isMaaserPayment?: boolean;    // Payment to charity (Show in Maaser tab)
   isTaxDeductible?: boolean;    // Business exp for Tax filing (Show in Inv/Tax tab only)
-  isInvestment?: boolean;       // Savings/Investment (Show in Inv/Tax tab)
+  isInvestment?: boolean;       // Investment deposits (Show in Inv/Tax tab)
+  isTaxSavings?: boolean;       // Tax savings deposits (Show in Inv/Tax tab)
   isRecurring?: boolean;        // Monthly recurring bills (Show in Recurring tab)
 }
 

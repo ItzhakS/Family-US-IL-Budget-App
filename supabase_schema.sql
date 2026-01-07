@@ -29,6 +29,7 @@ create table transactions (
   is_maaser_payment boolean default false,
   is_tax_deductible boolean default false,
   is_investment boolean default false,
+  is_tax_savings boolean default false,
   family_id uuid not null -- This links data to the family, not just the user
 );
 

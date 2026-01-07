@@ -22,15 +22,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
   const [isRecurring, setIsRecurring] = useState(transaction?.isRecurring || false);
   
   // Expense Classification helper
-  const getExpenseClass = (tx?: Transaction): 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'maaser_payment' => {
+  const getExpenseClass = (tx?: Transaction): 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment' => {
     if (!tx) return 'household';
     if (tx.isMaaserPayment) return 'maaser_payment';
     if (tx.isMaaserDeductible) return 'maaser_deductible';
     if (tx.isTaxDeductible) return 'tax_deductible';
     if (tx.isInvestment) return 'investment';
+    if (tx.isTaxSavings) return 'tax_savings';
     return 'household';
   };
-  const [expenseClass, setExpenseClass] = useState<'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'maaser_payment'>(getExpenseClass(transaction));
+  const [expenseClass, setExpenseClass] = useState<'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment'>(getExpenseClass(transaction));
 
   // Update form when transaction prop changes
   useEffect(() => {
@@ -43,11 +44,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
       setCategory(transaction.category);
       setIsRecurring(transaction.isRecurring || false);
       // Determine expense class
-      let newExpenseClass: 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'maaser_payment' = 'household';
+      let newExpenseClass: 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment' = 'household';
       if (transaction.isMaaserPayment) newExpenseClass = 'maaser_payment';
       else if (transaction.isMaaserDeductible) newExpenseClass = 'maaser_deductible';
       else if (transaction.isTaxDeductible) newExpenseClass = 'tax_deductible';
       else if (transaction.isInvestment) newExpenseClass = 'investment';
+      else if (transaction.isTaxSavings) newExpenseClass = 'tax_savings';
       setExpenseClass(newExpenseClass);
     } else {
       // Reset to defaults when no transaction (new transaction)
@@ -72,6 +74,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
     const isMaaserDeductible = type === TransactionType.EXPENSE && expenseClass === 'maaser_deductible';
     const isTaxDeductible = type === TransactionType.EXPENSE && expenseClass === 'tax_deductible';
     const isInvestment = type === TransactionType.EXPENSE && expenseClass === 'investment';
+    const isTaxSavings = type === TransactionType.EXPENSE && expenseClass === 'tax_savings';
     const isMaaserPayment = type === TransactionType.EXPENSE && expenseClass === 'maaser_payment';
 
     onSave({
@@ -85,6 +88,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
       isMaaserDeductible,
       isTaxDeductible,
       isInvestment,
+      isTaxSavings,
       isMaaserPayment
     });
     onClose();
@@ -315,7 +319,19 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
                          onChange={() => setExpenseClass('investment')}
                          className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                       />
-                      <label htmlFor="investment" className="ml-2 text-sm text-gray-700">Investment / Tax Saving Deposit</label>
+                      <label htmlFor="investment" className="ml-2 text-sm text-gray-700">Investment Deposit</label>
+                   </div>
+
+                   <div className="flex items-center">
+                      <input 
+                         type="radio" 
+                         id="tax_savings"
+                         name="expenseClass"
+                         checked={expenseClass === 'tax_savings'}
+                         onChange={() => setExpenseClass('tax_savings')}
+                         className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                      />
+                      <label htmlFor="tax_savings" className="ml-2 text-sm text-gray-700">Tax Savings Deposit</label>
                    </div>
 
                    <div className="flex items-center">
@@ -331,18 +347,17 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
                    </div>
                 </div>
 
-                {expenseClass === 'household' && (
-                  <div className="flex items-center mt-3 bg-gray-50 p-3 rounded-lg">
-                    <input 
-                        type="checkbox" 
-                        id="isRecurring"
-                        checked={isRecurring}
-                        onChange={(e) => setIsRecurring(e.target.checked)}
-                        className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                    />
-                    <label htmlFor="isRecurring" className="ml-2 text-sm text-gray-700">Monthly Recurring Bill</label>
-                  </div>
-                )}
+                {/* Recurring checkbox - available for all expense types */}
+                <div className="flex items-center mt-3 bg-gray-50 p-3 rounded-lg">
+                  <input 
+                      type="checkbox" 
+                      id="isRecurring"
+                      checked={isRecurring}
+                      onChange={(e) => setIsRecurring(e.target.checked)}
+                      className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                  />
+                  <label htmlFor="isRecurring" className="ml-2 text-sm text-gray-700">Monthly Recurring Bill</label>
+                </div>
              </div>
           )}
 
