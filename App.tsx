@@ -133,12 +133,11 @@ const App: React.FC = () => {
             email: session.user.email || '',
           });
           fetchTransactions();
-          fetchFamilyIdAndExchangeRate(session.user.id);
+          fetchExchangeRate();
         } else {
           setUser(null);
           setTransactions([]);
           setExchangeRate(null);
-          setFamilyId(null);
         }
       }
     };
