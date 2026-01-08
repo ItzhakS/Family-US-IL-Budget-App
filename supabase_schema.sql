@@ -101,3 +101,23 @@ using (family_id in (select family_id from profiles where id = auth.uid()));
 
 -- Policy: Users can insert invites
 create policy "Create invites" on family_invites for insert with check (true);
+
+-- 7. Create exchange rates table (global, one rate per day for entire app)
+create table exchange_rates (
+  id uuid default gen_random_uuid() primary key,
+  created_at timestamp with time zone default now(),
+  date text not null unique, -- YYYY-MM-DD format, one rate per day globally
+  usd_to_ils numeric not null, -- 1 USD = X ILS
+  ils_to_usd numeric not null -- 1 ILS = X USD
+);
+
+-- Enable RLS for exchange_rates
+alter table exchange_rates enable row level security;
+
+-- Policy: Anyone can view exchange rates (they're universal)
+create policy "View exchange rates" on exchange_rates for select 
+using (true);
+
+-- Policy: Anyone can insert exchange rates (first user of the day will fetch it)
+create policy "Insert exchange rates" on exchange_rates for insert 
+with check (true);
