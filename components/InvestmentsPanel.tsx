@@ -1,12 +1,14 @@
 import React from 'react';
 import { Transaction, TransactionType } from '../types';
-import { TrendingUp, Briefcase } from 'lucide-react';
+import { TrendingUp, Briefcase, Edit, Trash2 } from 'lucide-react';
 
 interface InvestmentsPanelProps {
   transactions: Transaction[];
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions }) => {
+export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions, onEdit, onDelete }) => {
   // Filter for Investments
   const investments = transactions.filter(t => t.type === TransactionType.EXPENSE && t.isInvestment);
   
@@ -53,14 +55,36 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
         <h3 className="font-semibold text-gray-700 mb-3">Recent Deposits</h3>
         <div className="space-y-2">
           {investments.slice(0, 5).map(t => (
-            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm">
-              <div className="flex flex-col">
+            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm group hover:bg-gray-100 transition-colors">
+              <div className="flex flex-col flex-1">
                  <span className="font-medium text-gray-900">{t.description}</span>
                  <span className="text-xs text-gray-500">{t.date}</span>
               </div>
-              <span className="font-bold text-blue-600">
-                {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-blue-600">
+                  {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
+                </span>
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(t.id)}
+                      className="text-gray-400 hover:text-indigo-500 transition-colors"
+                      title="Edit transaction"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => onDelete(t.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete transaction"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
           {investments.length === 0 && <p className="text-sm text-gray-400">No investment records yet.</p>}
@@ -90,14 +114,36 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
         <h3 className="font-semibold text-gray-700 mb-3">Recent Deposits</h3>
         <div className="space-y-2">
           {taxSavings.slice(0, 5).map(t => (
-            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm">
-              <div className="flex flex-col">
+            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm group hover:bg-gray-100 transition-colors">
+              <div className="flex flex-col flex-1">
                  <span className="font-medium text-gray-900">{t.description}</span>
                  <span className="text-xs text-gray-500">{t.date}</span>
               </div>
-              <span className="font-bold text-purple-600">
-                {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="font-bold text-purple-600">
+                  {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
+                </span>
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {onEdit && (
+                    <button
+                      onClick={() => onEdit(t.id)}
+                      className="text-gray-400 hover:text-indigo-500 transition-colors"
+                      title="Edit transaction"
+                    >
+                      <Edit size={16} />
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      onClick={() => onDelete(t.id)}
+                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      title="Delete transaction"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           ))}
           {taxSavings.length === 0 && <p className="text-sm text-gray-400">No tax savings records yet.</p>}
@@ -134,15 +180,38 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
                    <th className="px-4 py-2">Date</th>
                    <th className="px-4 py-2">Description</th>
                    <th className="px-4 py-2 text-right">Amount</th>
+                   <th className="px-4 py-2 text-right">Actions</th>
                 </tr>
              </thead>
              <tbody>
                 {taxDeductibles.map(t => (
-                   <tr key={t.id} className="border-b border-gray-100">
+                   <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
                       <td className="px-4 py-2 text-gray-500">{t.date}</td>
                       <td className="px-4 py-2 font-medium text-gray-900">{t.description}</td>
                       <td className="px-4 py-2 text-right">
                          {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {onEdit && (
+                            <button
+                              onClick={() => onEdit(t.id)}
+                              className="text-gray-400 hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Edit transaction"
+                            >
+                              <Edit size={16} />
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button
+                              onClick={() => onDelete(t.id)}
+                              className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Delete transaction"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                    </tr>
                 ))}

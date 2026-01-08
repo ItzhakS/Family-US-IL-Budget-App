@@ -1,13 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Transaction, TransactionType, Currency, MaaserMonthStats } from '../types';
-import { Heart, ChevronDown, ChevronUp, AlertCircle } from 'lucide-react';
+import { Heart, ChevronDown, ChevronUp, AlertCircle, Edit, Trash2 } from 'lucide-react';
 
 interface MaaserTrackerProps {
   transactions: Transaction[];
   currency: Currency;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
-export const MaaserTracker: React.FC<MaaserTrackerProps> = ({ transactions, currency }) => {
+export const MaaserTracker: React.FC<MaaserTrackerProps> = ({ transactions, currency, onEdit, onDelete }) => {
   const currencySymbol = currency === 'ILS' ? '₪' : '$';
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
 
@@ -70,6 +72,13 @@ export const MaaserTracker: React.FC<MaaserTrackerProps> = ({ transactions, curr
   }, [transactions, currency]);
 
   const currentBalance = monthlyStats.length > 0 ? monthlyStats[0].runningBalance : 0;
+
+  // Get all maaser-related transactions (deductibles and payments) for this currency
+  const maaserTransactions = useMemo(() => {
+    return transactions
+      .filter(t => t.currency === currency && (t.isMaaserDeductible || t.isMaaserPayment))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [transactions, currency]);
 
   return (
     <div className="space-y-4">
@@ -164,6 +173,80 @@ export const MaaserTracker: React.FC<MaaserTrackerProps> = ({ transactions, curr
               )}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Maaser Transactions List */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b border-gray-100">
+          <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+            <Heart className="text-pink-500" size={18} />
+            Ma'aser Transactions ({currency})
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">Deductible expenses and charity payments</p>
+        </div>
+        <div className="overflow-x-auto">
+          {maaserTransactions.length > 0 ? (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {maaserTransactions.map((t) => (
+                  <tr key={t.id} className="hover:bg-gray-50 transition-colors group">
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{t.date}</td>
+                    <td className="px-4 py-3 text-sm text-gray-900 font-medium">{t.description}</td>
+                    <td className="px-4 py-3 text-sm">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        t.isMaaserPayment 
+                          ? 'bg-pink-100 text-pink-800' 
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {t.isMaaserPayment ? 'Charity Payment' : 'Deductible'}
+                      </span>
+                    </td>
+                    <td className={`px-4 py-3 text-sm font-bold text-right whitespace-nowrap ${
+                      t.isMaaserPayment ? 'text-pink-600' : 'text-amber-600'
+                    }`}>
+                      {currencySymbol}{t.amount.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        {onEdit && (
+                          <button
+                            onClick={() => onEdit(t.id)}
+                            className="text-gray-400 hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Edit transaction"
+                          >
+                            <Edit size={16} />
+                          </button>
+                        )}
+                        {onDelete && (
+                          <button
+                            onClick={() => onDelete(t.id)}
+                            className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                            title="Delete transaction"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="p-8 text-center text-gray-400">
+              <p className="text-sm">No ma'aser transactions yet.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

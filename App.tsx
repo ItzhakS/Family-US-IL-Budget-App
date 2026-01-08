@@ -720,11 +720,33 @@ const App: React.FC = () => {
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <div className="space-y-4">
                   <h3 className="font-bold text-gray-900 border-b pb-2">₪ Shekels (ILS)</h3>
-                  <MaaserTracker transactions={yearFilteredTransactions} currency="ILS" />
+                  <MaaserTracker 
+                    transactions={yearFilteredTransactions} 
+                    currency="ILS"
+                    onEdit={(id) => {
+                      const transaction = transactions.find(t => t.id === id);
+                      if (transaction) {
+                        setEditingTransaction(transaction);
+                        setIsFormOpen(true);
+                      }
+                    }}
+                    onDelete={handleDeleteTransaction}
+                  />
               </div>
               <div className="space-y-4">
                   <h3 className="font-bold text-gray-900 border-b pb-2">$ Dollars (USD)</h3>
-                  <MaaserTracker transactions={yearFilteredTransactions} currency="USD" />
+                  <MaaserTracker 
+                    transactions={yearFilteredTransactions} 
+                    currency="USD"
+                    onEdit={(id) => {
+                      const transaction = transactions.find(t => t.id === id);
+                      if (transaction) {
+                        setEditingTransaction(transaction);
+                        setIsFormOpen(true);
+                      }
+                    }}
+                    onDelete={handleDeleteTransaction}
+                  />
               </div>
            </div>
         )}
@@ -734,7 +756,17 @@ const App: React.FC = () => {
         )}
 
         {activeTab === 'investments' && (
-           <InvestmentsPanel transactions={yearFilteredTransactions} />
+           <InvestmentsPanel 
+             transactions={yearFilteredTransactions}
+             onEdit={(id) => {
+               const transaction = transactions.find(t => t.id === id);
+               if (transaction) {
+                 setEditingTransaction(transaction);
+                 setIsFormOpen(true);
+               }
+             }}
+             onDelete={handleDeleteTransaction}
+           />
         )}
 
         {activeTab === 'yearly' && (() => {
