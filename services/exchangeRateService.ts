@@ -38,6 +38,49 @@ async function fetchExchangeRateFromAPI(): Promise<ExchangeRate> {
   };
 }
 
+const DEMO_FX_SESSION_PREFIX = 'family-budget-demo-fx-';
+
+/**
+ * USD/ILS rate without Supabase (demo mode or no DB). Caches per calendar day in sessionStorage.
+ */
+export async function getExchangeRateOffline(): Promise<ExchangeRate | null> {
+  const today = new Date().toISOString().split('T')[0];
+  const cacheKey = `${DEMO_FX_SESSION_PREFIX}${today}`;
+
+  if (typeof sessionStorage !== 'undefined') {
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const parsed = JSON.parse(cached) as ExchangeRate;
+        if (
+          typeof parsed?.usdToIls === 'number' &&
+          typeof parsed?.ilsToUsd === 'number' &&
+          typeof parsed?.date === 'string'
+        ) {
+          return parsed;
+        }
+      }
+    } catch {
+      // ignore bad cache
+    }
+  }
+
+  try {
+    const rate = await fetchExchangeRateFromAPI();
+    if (typeof sessionStorage !== 'undefined') {
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(rate));
+      } catch {
+        // quota / private mode
+      }
+    }
+    return rate;
+  } catch (e) {
+    console.error('getExchangeRateOffline failed:', e);
+    return null;
+  }
+}
+
 /**
  * Gets the exchange rate, fetching from API if needed (once per day for entire app)
  */

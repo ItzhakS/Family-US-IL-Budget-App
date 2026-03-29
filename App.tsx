@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Plus, Wallet, LayoutDashboard, Heart, Calendar, Briefcase, CalendarClock, LogOut, Loader2, Database, Key } from 'lucide-react';
 import { supabase, isSupabaseConfigured, supabaseUrl, supabaseAnonKey } from './supabaseClient';
@@ -15,14 +15,40 @@ import { Login } from './components/Login';
 import { YearSelector } from './components/YearSelector';
 import { FamilyManager } from './components/FamilyManager';
 import { AnalysisPanel } from './components/AnalysisPanel';
-import { getExchangeRate, ExchangeRate, convertCurrency } from './services/exchangeRateService';
+import { getExchangeRate, getExchangeRateOffline, ExchangeRate, convertCurrency } from './services/exchangeRateService';
+import { getDemoSeedTransactions } from './constants/demoSeedTransactions';
+import {
+  readDemoTransactions,
+  writeDemoTransactions,
+  setDemoSessionActive,
+  isDemoSessionActive,
+} from './services/demoStorage';
+
+const DEMO_GUEST: User = { id: 'demo', name: 'Guest', email: 'Local demo' };
+
+const sortTransactionsByDate = (txs: Transaction[]) =>
+  [...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 const App: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isDemoMode, setIsDemoMode] = useState(() => isDemoSessionActive());
+  const isDemoModeRef = useRef(isDemoMode);
+  isDemoModeRef.current = isDemoMode;
+
+  const [user, setUser] = useState<User | null>(() =>
+    isDemoSessionActive() ? DEMO_GUEST : null
+  );
+  const [loading, setLoading] = useState(() => !isDemoSessionActive());
   const [dataLoading, setDataLoading] = useState(false);
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>(() => {
+    if (!isDemoSessionActive()) return [];
+    let txs = readDemoTransactions();
+    if (txs.length === 0) {
+      txs = getDemoSeedTransactions();
+      writeDemoTransactions(txs);
+    }
+    return sortTransactionsByDate(txs);
+  });
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'maaser' | 'recurring' | 'investments' | 'yearly'>('dashboard');
@@ -33,6 +59,35 @@ const App: React.FC = () => {
 
   // Exchange Rate State
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
+
+  const enterDemo = () => {
+    setDemoSessionActive(true);
+    setIsDemoMode(true);
+    isDemoModeRef.current = true;
+    let txs = readDemoTransactions();
+    if (txs.length === 0) {
+      txs = getDemoSeedTransactions();
+      writeDemoTransactions(txs);
+    }
+    setTransactions(sortTransactionsByDate(txs));
+    setUser(DEMO_GUEST);
+    setLoading(false);
+  };
+
+  const exitDemo = () => {
+    setDemoSessionActive(false);
+    setIsDemoMode(false);
+    isDemoModeRef.current = false;
+    setUser(null);
+    setTransactions([]);
+    setExchangeRate(null);
+  };
+
+  useEffect(() => {
+    if (isDemoMode) {
+      getExchangeRateOffline().then(setExchangeRate);
+    }
+  }, [isDemoMode]);
 
   // Check Active Session on Mount
   useEffect(() => {
@@ -62,6 +117,9 @@ const App: React.FC = () => {
       console.log('Auth state changed:', event, session?.user?.email);
       
       if (session?.user) {
+        setDemoSessionActive(false);
+        setIsDemoMode(false);
+        isDemoModeRef.current = false;
         setUser({
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
@@ -96,6 +154,9 @@ const App: React.FC = () => {
       }
       
       if (session?.user) {
+        setDemoSessionActive(false);
+        setIsDemoMode(false);
+        isDemoModeRef.current = false;
         setUser({
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
@@ -127,6 +188,9 @@ const App: React.FC = () => {
         // Re-check session when auth storage changes in another tab
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+          setDemoSessionActive(false);
+          setIsDemoMode(false);
+          isDemoModeRef.current = false;
           setUser({
             id: session.user.id,
             name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
@@ -134,7 +198,7 @@ const App: React.FC = () => {
           });
           fetchTransactions();
           fetchExchangeRate();
-        } else {
+        } else if (!isDemoSessionActive()) {
           setUser(null);
           setTransactions([]);
           setExchangeRate(null);
@@ -151,6 +215,16 @@ const App: React.FC = () => {
   }, []);
 
   const fetchTransactions = async () => {
+    if (isDemoModeRef.current) {
+      setDataLoading(true);
+      try {
+        const txs = sortTransactionsByDate(readDemoTransactions());
+        setTransactions(txs);
+      } finally {
+        setDataLoading(false);
+      }
+      return;
+    }
     if (!isSupabaseConfigured) return;
     setDataLoading(true);
     try {
@@ -190,9 +264,13 @@ const App: React.FC = () => {
   };
 
   const fetchExchangeRate = async () => {
-    if (!isSupabaseConfigured) return;
     try {
-      // Fetch exchange rate (global, shared by all families)
+      if (isDemoModeRef.current) {
+        const rate = await getExchangeRateOffline();
+        setExchangeRate(rate);
+        return;
+      }
+      if (!isSupabaseConfigured) return;
       const rate = await getExchangeRate();
       setExchangeRate(rate);
     } catch (err) {
@@ -201,10 +279,32 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    if (isDemoMode) {
+      exitDemo();
+      return;
+    }
     await supabase.auth.signOut();
   };
 
   const handleAddTransaction = async (newTx: Omit<Transaction, 'id'>) => {
+    if (isDemoMode) {
+      try {
+        const id =
+          typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `demo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        const row: Transaction = { ...newTx, id };
+        setTransactions(prev => {
+          const next = sortTransactionsByDate([row, ...prev]);
+          writeDemoTransactions(next);
+          return next;
+        });
+      } catch (err) {
+        console.error('Error saving demo transaction:', err);
+        alert('Failed to save transaction. Please try again.');
+      }
+      return;
+    }
     if (!isSupabaseConfigured) return;
     try {
         // Optimistic update
@@ -268,6 +368,21 @@ const App: React.FC = () => {
   };
 
   const handleUpdateTransaction = async (id: string, updatedTx: Omit<Transaction, 'id'>) => {
+    if (isDemoMode) {
+      try {
+        setTransactions(prev => {
+          const next = sortTransactionsByDate(
+            prev.map(t => (t.id === id ? { ...t, ...updatedTx, id } : t))
+          );
+          writeDemoTransactions(next);
+          return next;
+        });
+      } catch (err) {
+        console.error('Error updating demo transaction:', err);
+        alert('Failed to update transaction. Please try again.');
+      }
+      return;
+    }
     if (!isSupabaseConfigured) return;
     try {
         // Optimistic update
@@ -341,9 +456,18 @@ const App: React.FC = () => {
   };
 
   const handleDeleteTransaction = async (id: string) => {
-     if (!isSupabaseConfigured) return;
+     if (!isDemoMode && !isSupabaseConfigured) return;
      if (!window.confirm("Are you sure you want to delete this?")) return;
-     
+
+     if (isDemoMode) {
+       setTransactions(prev => {
+         const next = prev.filter(t => t.id !== id);
+         writeDemoTransactions(next);
+         return next;
+       });
+       return;
+     }
+
      const prev = [...transactions];
      setTransactions(transactions.filter(t => t.id !== id));
 
@@ -428,7 +552,7 @@ const App: React.FC = () => {
 
   // --- RENDERING STATES ---
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !isDemoMode) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
         <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
@@ -467,6 +591,19 @@ const App: React.FC = () => {
           <div className="mt-8 text-center text-sm text-gray-500">
             Once you add these keys and refresh, the app will start automatically.
           </div>
+
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <button
+              type="button"
+              onClick={enterDemo}
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 py-2"
+            >
+              Explore without signing in
+            </button>
+            <p className="text-xs text-gray-400 mt-2 max-w-sm mx-auto">
+              Local demo only — data stays in this browser and is not synced.
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -477,7 +614,7 @@ const App: React.FC = () => {
   }
 
   if (!user) {
-    return <Login />;
+    return <Login onTryDemo={enterDemo} />;
   }
 
   return (
@@ -487,6 +624,11 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-4">
+              {isDemoMode && (
+                <span className="shrink-0 rounded-md bg-amber-100 text-amber-900 text-[10px] sm:text-xs font-bold px-2 py-1 border border-amber-200 tracking-wide">
+                  TEST VIEW
+                </span>
+              )}
               {/* Exchange Rate Display */}
               {exchangeRate && (
                 <div className="flex items-center gap-2 bg-gray-50 px-2 sm:px-3 py-1.5 rounded-lg border border-gray-200">
@@ -533,7 +675,7 @@ const App: React.FC = () => {
                 <button 
                     onClick={handleLogout}
                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Sign Out"
+                    title={isDemoMode ? 'Exit demo' : 'Sign Out'}
                 >
                     <LogOut size={20} />
                 </button>
@@ -545,9 +687,11 @@ const App: React.FC = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Family Invite Banner */}
+        {!isDemoMode && (
         <div className="flex justify-end mb-4">
             <FamilyManager />
         </div>
+        )}
 
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl mb-8 w-full sm:w-auto overflow-x-auto">

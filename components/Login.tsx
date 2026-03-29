@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 import { Wallet, Loader2, AlertCircle } from 'lucide-react';
 
-export const Login: React.FC = () => {
+interface LoginProps {
+  onTryDemo?: () => void;
+}
+
+export const Login: React.FC<LoginProps> = ({ onTryDemo }) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -128,6 +132,21 @@ export const Login: React.FC = () => {
           </svg>
           Google
         </button>
+
+        {onTryDemo && (
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={onTryDemo}
+              className="w-full text-sm font-medium text-indigo-600 hover:text-indigo-800 py-2 rounded-lg transition-colors"
+            >
+              Explore without signing in
+            </button>
+            <p className="text-xs text-gray-400 mt-2">
+              Demo data stays on this device only and is not synced.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
