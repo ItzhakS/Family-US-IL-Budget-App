@@ -2,13 +2,12 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 import { Wallet, Loader2, AlertCircle } from 'lucide-react';
-import {
-  setDemoSessionActive,
-  isDemoSessionActive,
-} from '../services/demoStorage';
+import { isDemoSessionActive } from '../services/demoStorage';
+import { useAuth } from '../contexts/AuthContext';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const { enterDemo } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -48,8 +47,8 @@ export const LoginPage: React.FC = () => {
     );
   }
 
-  const enterDemo = () => {
-    setDemoSessionActive(true);
+  const handleTryDemo = () => {
+    enterDemo();
     navigate('/dashboard', { replace: true });
   };
 
@@ -196,7 +195,7 @@ export const LoginPage: React.FC = () => {
           <div className="mt-8 pt-6 border-t border-gray-100 text-center">
             <button
               type="button"
-              onClick={enterDemo}
+              onClick={handleTryDemo}
               className="text-sm font-medium text-indigo-600 hover:text-indigo-800 py-2"
             >
               Explore without signing in

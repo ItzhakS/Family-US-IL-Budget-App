@@ -1,12 +1,16 @@
-import { useApp } from '../contexts/AppContext';
+import { useTransactions } from '../contexts/TransactionsContext';
+import { useShell } from '../contexts/ShellContext';
+import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
 import { MaaserTracker } from '../components/MaaserTracker';
 
 export const MaaserPage: React.FC = () => {
-  const {
-    yearFilteredTransactions,
-    handleDeleteTransaction,
-    openEditForm,
-  } = useApp();
+  const { transactions, remove } = useTransactions();
+  const { selectedYears, exchangeRate, openEditForm } = useShell();
+  const { yearFilteredTransactions } = useBudgetCalculations(
+    transactions,
+    selectedYears,
+    exchangeRate
+  );
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -16,7 +20,7 @@ export const MaaserPage: React.FC = () => {
           transactions={yearFilteredTransactions}
           currency="ILS"
           onEdit={openEditForm}
-          onDelete={handleDeleteTransaction}
+          onDelete={(id) => void remove(id)}
         />
       </div>
       <div className="space-y-4">
@@ -25,7 +29,7 @@ export const MaaserPage: React.FC = () => {
           transactions={yearFilteredTransactions}
           currency="USD"
           onEdit={openEditForm}
-          onDelete={handleDeleteTransaction}
+          onDelete={(id) => void remove(id)}
         />
       </div>
     </div>

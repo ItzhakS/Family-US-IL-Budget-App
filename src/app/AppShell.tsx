@@ -1,11 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { Plus, Wallet, LayoutDashboard, Heart, CalendarClock, Briefcase, Calendar, LogOut, Loader2, Database, Key } from 'lucide-react';
-import { useApp, AppProvider } from '../contexts/AppContext';
+import {
+  Plus,
+  Wallet,
+  LayoutDashboard,
+  Heart,
+  CalendarClock,
+  Briefcase,
+  Calendar,
+  LogOut,
+  Loader2,
+  Database,
+  Key,
+} from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { TransactionsProvider, useTransactions } from '../contexts/TransactionsContext';
+import { ShellProvider, useShell } from '../contexts/ShellContext';
 import { YearSelector } from '../components/YearSelector';
 import { FamilyManager } from '../components/FamilyManager';
 import { TransactionForm } from '../components/TransactionForm';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
+import type { Transaction } from '../types';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,33 +32,31 @@ const navItems = [
 
 const AppShellInner: React.FC = () => {
   const navigate = useNavigate();
+  const { user, isDemoMode, loading, enterDemo, logout } = useAuth();
+  const { transactions, loading: dataLoading, add, update } = useTransactions();
   const {
-    user,
-    isDemoMode,
-    loading,
-    dataLoading,
     exchangeRate,
     selectedYears,
-    availableYears,
+    setSelectedYears,
     isFormOpen,
     editingTransaction,
-    setSelectedYears,
     setIsFormOpen,
     setEditingTransaction,
-    handleLogout,
-    handleAddTransaction,
-    handleUpdateTransaction,
-    enterDemo,
-  } = useApp();
+  } = useShell();
 
-  // Auth redirect - must be before any conditional returns
+  const currentYear = new Date().getFullYear();
+  const availableYears = useMemo(() => {
+    const years = new Set(transactions.map((t) => new Date(t.date).getFullYear()));
+    years.add(currentYear);
+    return Array.from(years).sort((a, b) => b - a);
+  }, [transactions, currentYear]);
+
   useEffect(() => {
-    if (!loading && !user && (isSupabaseConfigured || isDemoMode === false)) {
+    if (!loading && !user && isSupabaseConfigured && !isDemoMode) {
       navigate('/login', { replace: true });
     }
   }, [loading, user, navigate, isDemoMode]);
 
-  // Setup screen when Supabase not configured and not in demo mode
   if (!isSupabaseConfigured && !isDemoMode) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -62,7 +75,11 @@ const AppShellInner: React.FC = () => {
                 <LayoutDashboard size={18} /> 1. Create Supabase Project
               </h3>
               <p className="text-sm text-indigo-800 mb-2">
-                Go to <a href="https://supabase.com" target="_blank" rel="noreferrer" className="underline font-bold">supabase.com</a>, create a free project, and copy the SQL code provided in the deployment instructions.
+                Go to{' '}
+                <a href="https://supabase.com" target="_blank" rel="noreferrer" className="underline font-bold">
+                  supabase.com
+                </a>
+                , create a free project, and copy the SQL code provided in the deployment instructions.
               </p>
             </div>
 
@@ -101,7 +118,6 @@ const AppShellInner: React.FC = () => {
     );
   }
 
-  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -110,7 +126,6 @@ const AppShellInner: React.FC = () => {
     );
   }
 
-  // Waiting for redirect to login
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -119,11 +134,11 @@ const AppShellInner: React.FC = () => {
     );
   }
 
-  const handleSaveTransaction = (tx: Omit<import('../types').Transaction, 'id'>) => {
+  const handleSaveTransaction = (tx: Omit<Transaction, 'id'>) => {
     if (editingTransaction) {
-      handleUpdateTransaction(editingTransaction.id, tx);
+      void update(editingTransaction.id, tx);
     } else {
-      handleAddTransaction(tx);
+      void add(tx);
     }
     setIsFormOpen(false);
     setEditingTransaction(null);
@@ -131,7 +146,6 @@ const AppShellInner: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -184,7 +198,7 @@ const AppShellInner: React.FC = () => {
                 <span className="hidden sm:inline">Add</span>
               </button>
               <button
-                onClick={handleLogout}
+                onClick={() => void logout()}
                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 title={isDemoMode ? 'Exit demo' : 'Sign Out'}
               >
@@ -196,14 +210,12 @@ const AppShellInner: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Family Invite Banner */}
         {!isDemoMode && (
           <div className="flex justify-end mb-4">
             <FamilyManager />
           </div>
         )}
 
-        {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl mb-8 w-full sm:w-auto overflow-x-auto">
           {navItems.map(({ to, label, icon: Icon }) => (
             <NavLink
@@ -221,11 +233,9 @@ const AppShellInner: React.FC = () => {
           ))}
         </div>
 
-        {/* Page Content */}
         <Outlet />
       </main>
 
-      {/* Transaction Form Modal */}
       {isFormOpen && (
         <TransactionForm
           transaction={editingTransaction || undefined}
@@ -242,8 +252,10 @@ const AppShellInner: React.FC = () => {
 
 export const AppShell: React.FC = () => {
   return (
-    <AppProvider>
-      <AppShellInner />
-    </AppProvider>
+    <TransactionsProvider>
+      <ShellProvider>
+        <AppShellInner />
+      </ShellProvider>
+    </TransactionsProvider>
   );
 };

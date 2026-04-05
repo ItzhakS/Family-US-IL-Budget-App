@@ -28,11 +28,11 @@
 
 > Decouple data fetching and auth from `App.tsx` into hooks and services.
 
-- [ ] **P0B.1** `[TAG:Services]` Create `AuthContext` + `useAuth` hook. Extract session management, login, logout, OAuth callback, demo mode, cross-tab sync from `App.tsx`. — _Done when:_ Auth works through context, `App.tsx` has no auth logic.
-- [ ] **P0B.2** `[TAG:Services]` Create `transactionService.ts`. Abstract Supabase queries (fetch, create, update, delete). Handle snake_case ↔ camelCase. Demo mode → `demoStorage`. — _Done when:_ Service exports `getAll`, `create`, `update`, `delete`, `bulkCreate`. No direct Supabase calls in components.
-- [ ] **P0B.3** `[TAG:Services]` Create `useTransactions` hook wrapping service. Manage loading, error, optimistic updates. Expose `{ transactions, add, update, remove, loading, error }`. — _Done when:_ All pages use hook for CRUD.
-- [ ] **P0B.4** `[TAG:Services]` Create `useBudgetCalculations` hook. Extract computed values: `dashboardTransactions`, `availableYears`, `getMonthlyData()`, category totals. — _Done when:_ `DashboardPage` + `YearlySummaryPage` use hook.
-- [ ] **P0B.5** `[TAG:Services]` Slim `App.tsx` to ~30 lines: `AuthProvider` > `ThemeProvider` > `RouterProvider` > `ToastContainer`. — _Done when:_ `App.tsx` < 50 lines, all features work.
+- [x] ~~**P0B.1** `[TAG:Services]` Create `AuthContext` + `useAuth` hook. Extract session management, login, logout, OAuth callback, demo mode, cross-tab sync from `App.tsx`. — _Done when:_ Auth works through context, `App.tsx` has no auth logic.~~
+- [x] ~~**P0B.2** `[TAG:Services]` Create `transactionService.ts`. Abstract Supabase queries (fetch, create, update, delete). Handle snake_case ↔ camelCase. Demo mode → `demoStorage`. — _Done when:_ Service exports `getAll`, `create`, `update`, `delete`, `bulkCreate`. No direct Supabase calls in components.~~
+- [x] ~~**P0B.3** `[TAG:Services]` Create `useTransactions` hook wrapping service. Manage loading, error, optimistic updates. Expose `{ transactions, add, update, remove, loading, error }`. — _Done when:_ All pages use hook for CRUD.~~
+- [x] ~~**P0B.4** `[TAG:Services]` Create `useBudgetCalculations` hook. Extract computed values: `dashboardTransactions`, `availableYears`, `getMonthlyData()`, category totals. — _Done when:_ `DashboardPage` + `YearlySummaryPage` use hook.~~
+- [x] ~~**P0B.5** `[TAG:Services]` Slim `App.tsx` to ~30 lines: `AuthProvider` > `ThemeProvider` > `RouterProvider` > `ToastContainer`. — _Done when:_ `App.tsx` < 50 lines, all features work.~~
 
 ---
 

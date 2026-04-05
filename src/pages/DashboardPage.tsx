@@ -1,22 +1,23 @@
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { useApp } from '../contexts/AppContext';
+import { useTransactions } from '../contexts/TransactionsContext';
+import { useShell } from '../contexts/ShellContext';
+import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
 import { TransactionList } from '../components/TransactionList';
 import { AnalysisPanel } from '../components/AnalysisPanel';
 
 export const DashboardPage: React.FC = () => {
+  const { transactions, remove } = useTransactions();
+  const { selectedYears, exchangeRate, openEditForm } = useShell();
   const {
     yearFilteredTransactions,
     ilsSummary,
     usdSummary,
     getMonthlyData,
     getCategoryData,
-    handleDeleteTransaction,
-    openEditForm,
-  } = useApp();
+  } = useBudgetCalculations(transactions, selectedYears, exchangeRate);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Left Column: ILS World */}
       <div className="space-y-6">
         <h2 className="text-lg font-bold text-indigo-900 border-b pb-2 border-indigo-100">₪ Shekels (ILS)</h2>
 
@@ -49,7 +50,6 @@ export const DashboardPage: React.FC = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* ILS Breakdown */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <p className="text-xs font-bold text-gray-400 mb-2">Top Expenses</p>
           <div className="space-y-2">
@@ -63,7 +63,6 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Right Column: USD World */}
       <div className="space-y-6">
         <h2 className="text-lg font-bold text-emerald-900 border-b pb-2 border-emerald-100">$ Dollars (USD)</h2>
 
@@ -96,7 +95,6 @@ export const DashboardPage: React.FC = () => {
           </ResponsiveContainer>
         </div>
 
-        {/* USD Breakdown */}
         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
           <p className="text-xs font-bold text-gray-400 mb-2">Top Expenses</p>
           <div className="space-y-2">
@@ -110,17 +108,15 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Transaction List Row */}
       <div className="lg:col-span-2 space-y-4">
         <h2 className="text-lg font-bold text-gray-900 border-b pb-2 border-gray-100">Recent Transactions</h2>
         <TransactionList
           transactions={yearFilteredTransactions}
-          onDelete={handleDeleteTransaction}
+          onDelete={(id) => void remove(id)}
           onEdit={openEditForm}
         />
       </div>
 
-      {/* AI Analysis Row */}
       <div className="lg:col-span-2">
         <AnalysisPanel transactions={yearFilteredTransactions} />
       </div>
