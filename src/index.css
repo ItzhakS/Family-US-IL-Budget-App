@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Light-theme semantic tokens (Phase 0C). Phase 3 will add `.dark` overrides.
+ * Aligned with docs/design-guidelines.md — Tailwind maps these via tailwind.config.ts.
+ */
+@layer base {
+  :root {
+    --color-surface: #ffffff;
+    --color-surface-secondary: #f9fafb;
+    --color-border: #e5e7eb;
+    --color-text-primary: #111827;
+    --color-text-secondary: #6b7280;
+    --color-primary: #4f46e5;
+    --color-primary-hover: #4338ca;
+    --color-income: #16a34a;
+    --color-expense: #dc2626;
+    --color-warning: #d97706;
+    --color-maaser: #db2777;
+    --color-ils-accent: #eef2ff;
+    --color-usd-accent: #ecfdf5;
+
+    --chart-1: #0088fe;
+    --chart-2: #00c49f;
+    --chart-3: #ffbb28;
+    --chart-4: #ff8042;
+    --chart-5: #8884d8;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+}

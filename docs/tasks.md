@@ -38,9 +38,9 @@
 
 ## Phase 0C — Tailwind foundation
 
-- [ ] **P0C.1** `[TAG:Tailwind]` Add Vite + Tailwind PostCSS config files. Wire `src/index.css` with `@tailwind` directives imported from entry. — _Done when:_ Utility classes compile.
-- [ ] **P0C.2** `[TAG:Tailwind]` Remove CDN Tailwind from `index.html` **only after** local build produces equivalent styles. — _Done when:_ CDN removed, all screens render identically.
-- [ ] **P0C.3** `[TAG:Tailwind]` Introduce semantic CSS variables for colors (light theme only). Map Tailwind theme keys to them. — _Done when:_ Variables defined, Tailwind config uses them.
+- [x] ~~**P0C.1** `[TAG:Tailwind]` Add Vite + Tailwind PostCSS config files. Wire `src/index.css` with `@tailwind` directives imported from entry. — _Done when:_ Utility classes compile.~~
+- [x] ~~**P0C.2** `[TAG:Tailwind]` Remove CDN Tailwind from `index.html` **only after** local build produces equivalent styles. — _Done when:_ CDN removed, all screens render identically.~~
+- [x] ~~**P0C.3** `[TAG:Tailwind]` Introduce semantic CSS variables for colors (light theme only). Map Tailwind theme keys to them. — _Done when:_ Variables defined, Tailwind config uses them.~~
 
 ---
 
