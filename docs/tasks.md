@@ -13,14 +13,14 @@
 
 > Must complete before feature work. Establishes `src/` structure, routing, and service layer.
 
-- [ ] **P0A.1** `[TAG:Structure]` Move source files into `src/` directory structure per `implementation-plan.md`. Update imports. — _Done when:_ `vite dev` and `vite build` succeed.
-- [ ] **P0A.2** `[TAG:Structure]` Remove importmap from `index.html`; all deps come from `node_modules`. — _Done when:_ No importmap, app loads.
-- [ ] **P0A.3** `[TAG:Structure]` Upgrade React to v19 in `package.json`. Fix any breaking changes. — _Done when:_ `react@19` installed, no type errors, app renders.
-- [ ] **P0A.4** `[TAG:Router]` Install `react-router-dom@7`. Create `src/app/routes.tsx` with route definitions for `/dashboard`, `/maaser`, `/recurring`, `/investments`, `/yearly`, `/settings`, `/import`, `/login`. Redirect `/` → `/dashboard`. — _Done when:_ Routes defined, no runtime errors.
-- [ ] **P0A.5** `[TAG:Router]` Create `AppShell.tsx` layout: extract header (logo, FX rate, year selector, user info) + nav tabs from `App.tsx`. Use `<Outlet />`. — _Done when:_ AppShell renders, child routes in outlet, looks identical.
-- [ ] **P0A.6** `[TAG:Router]` Create page components: `DashboardPage`, `MaaserPage`, `RecurringPage`, `InvestmentsPage`, `YearlySummaryPage`. Move rendering logic from `App.tsx` tabs. — _Done when:_ Each page renders at its URL with existing functionality.
-- [ ] **P0A.7** `[TAG:Router]` Implement auth route guard. Unauthenticated + non-demo users redirect to `/login`. — _Done when:_ `/dashboard` while logged out → `/login`. Demo mode bypasses.
-- [ ] **P0A.8** `[TAG:Router]` Verify browser back/forward and direct URL access work. — _Done when:_ Navigation works, bookmarks work, no flash.
+- [x] ~~**P0A.1** `[TAG:Structure]` Move source files into `src/` directory structure per `implementation-plan.md`. Update imports. — _Done when:_ `vite dev` and `vite build` succeed.~~
+- [x] ~~**P0A.2** `[TAG:Structure]` Remove importmap from `index.html`; all deps come from `node_modules`. — _Done when:_ No importmap, app loads.~~
+- [x] ~~**P0A.3** `[TAG:Structure]` Upgrade React to v19 in `package.json`. Fix any breaking changes. — _Done when:_ `react@19` installed, no type errors, app renders.~~
+- [x] ~~**P0A.4** `[TAG:Router]` Install `react-router-dom@7`. Create `src/app/routes.tsx` with route definitions for `/dashboard`, `/maaser`, `/recurring`, `/investments`, `/yearly`, `/settings`, `/import`, `/login`. Redirect `/` → `/dashboard`. — _Done when:_ Routes defined, no runtime errors.~~
+- [x] ~~**P0A.5** `[TAG:Router]` Create `AppShell.tsx` layout: extract header (logo, FX rate, year selector, user info) + nav tabs from `App.tsx`. Use `<Outlet />`. — _Done when:_ AppShell renders, child routes in outlet, looks identical.~~
+- [x] ~~**P0A.6** `[TAG:Router]` Create page components: `DashboardPage`, `MaaserPage`, `RecurringPage`, `InvestmentsPage`, `YearlySummaryPage`. Move rendering logic from `App.tsx` tabs. — _Done when:_ Each page renders at its URL with existing functionality.~~
+- [x] ~~**P0A.7** `[TAG:Router]` Implement auth route guard. Unauthenticated + non-demo users redirect to `/login`. — _Done when:_ `/dashboard` while logged out → `/login`. Demo mode bypasses.~~
+- [x] ~~**P0A.8** `[TAG:Router]` Verify browser back/forward and direct URL access work. — _Done when:_ Navigation works, bookmarks work, no flash.~~
 
 ---
 

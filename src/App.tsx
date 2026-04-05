@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { Plus, Wallet, LayoutDashboard, Heart, Calendar, Briefcase, CalendarClock, LogOut, Loader2, Database, Key } from 'lucide-react';
-import { supabase, isSupabaseConfigured, supabaseUrl, supabaseAnonKey } from './supabaseClient';
+import { supabase, isSupabaseConfigured, supabaseUrl, supabaseAnonKey } from './lib/supabaseClient';
 
 import { Transaction, TransactionType, Currency, User } from './types';
-import { COLORS } from './constants';
+import { COLORS } from './lib/constants';
 import { TransactionForm } from './components/TransactionForm';
 import { TransactionList } from './components/TransactionList';
 import { StatCard } from './components/StatCard';
@@ -16,7 +16,7 @@ import { YearSelector } from './components/YearSelector';
 import { FamilyManager } from './components/FamilyManager';
 import { AnalysisPanel } from './components/AnalysisPanel';
 import { getExchangeRate, getExchangeRateOffline, ExchangeRate, convertCurrency } from './services/exchangeRateService';
-import { getDemoSeedTransactions } from './constants/demoSeedTransactions';
+import { getDemoSeedTransactions } from './lib/demoSeedTransactions';
 import {
   readDemoTransactions,
   writeDemoTransactions,
@@ -771,7 +771,7 @@ const App: React.FC = () => {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
                         <YAxis fontSize={10} axisLine={false} tickLine={false} />
-                        <Tooltip formatter={(v: number) => `₪${v.toLocaleString()}`} />
+                        <Tooltip formatter={(v) => `₪${Number(v).toLocaleString()}`} />
                         <Bar dataKey="income" fill="#4ade80" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} />
                       </BarChart>
@@ -818,7 +818,7 @@ const App: React.FC = () => {
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis dataKey="name" fontSize={10} axisLine={false} tickLine={false} />
                         <YAxis fontSize={10} axisLine={false} tickLine={false} />
-                        <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} />
+                        <Tooltip formatter={(v) => `$${Number(v).toLocaleString()}`} />
                         <Bar dataKey="income" fill="#4ade80" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} />
                       </BarChart>

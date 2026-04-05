@@ -1,0 +1,249 @@
+import { useEffect } from 'react';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Plus, Wallet, LayoutDashboard, Heart, CalendarClock, Briefcase, Calendar, LogOut, Loader2, Database, Key } from 'lucide-react';
+import { useApp, AppProvider } from '../contexts/AppContext';
+import { YearSelector } from '../components/YearSelector';
+import { FamilyManager } from '../components/FamilyManager';
+import { TransactionForm } from '../components/TransactionForm';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
+
+const navItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/maaser', label: "Ma'aser", icon: Heart },
+  { to: '/recurring', label: 'Recurring', icon: CalendarClock },
+  { to: '/investments', label: 'Inv/Tax', icon: Briefcase },
+  { to: '/yearly', label: 'Yearly', icon: Calendar },
+];
+
+const AppShellInner: React.FC = () => {
+  const navigate = useNavigate();
+  const {
+    user,
+    isDemoMode,
+    loading,
+    dataLoading,
+    exchangeRate,
+    selectedYears,
+    availableYears,
+    isFormOpen,
+    editingTransaction,
+    setSelectedYears,
+    setIsFormOpen,
+    setEditingTransaction,
+    handleLogout,
+    handleAddTransaction,
+    handleUpdateTransaction,
+    enterDemo,
+  } = useApp();
+
+  // Auth redirect - must be before any conditional returns
+  useEffect(() => {
+    if (!loading && !user && (isSupabaseConfigured || isDemoMode === false)) {
+      navigate('/login', { replace: true });
+    }
+  }, [loading, user, navigate, isDemoMode]);
+
+  // Setup screen when Supabase not configured and not in demo mode
+  if (!isSupabaseConfigured && !isDemoMode) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="max-w-xl w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+            <Database className="text-white" size={32} />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Setup Required</h1>
+          <p className="text-gray-600 mb-6">
+            Your family budget app is ready, but it needs a database to store your data.
+          </p>
+
+          <div className="space-y-4">
+            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+              <h3 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                <LayoutDashboard size={18} /> 1. Create Supabase Project
+              </h3>
+              <p className="text-sm text-indigo-800 mb-2">
+                Go to <a href="https://supabase.com" target="_blank" rel="noreferrer" className="underline font-bold">supabase.com</a>, create a free project, and copy the SQL code provided in the deployment instructions.
+              </p>
+            </div>
+
+            <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+              <h3 className="font-semibold text-indigo-900 mb-2 flex items-center gap-2">
+                <Key size={18} /> 2. Connect to App
+              </h3>
+              <p className="text-sm text-indigo-800">
+                If deploying to Vercel, add these Environment Variables:
+              </p>
+              <ul className="text-xs font-mono bg-white p-3 rounded mt-2 border border-indigo-100 text-gray-600">
+                <li className="mb-1">REACT_APP_SUPABASE_URL</li>
+                <li>REACT_APP_SUPABASE_ANON_KEY</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="mt-8 text-center text-sm text-gray-500">
+            Once you add these keys and refresh, the app will start automatically.
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-gray-100 text-center">
+            <button
+              type="button"
+              onClick={enterDemo}
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-800 py-2"
+            >
+              Explore without signing in
+            </button>
+            <p className="text-xs text-gray-400 mt-2 max-w-sm mx-auto">
+              Local demo only — data stays in this browser and is not synced.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-indigo-600" size={32} />
+      </div>
+    );
+  }
+
+  // Waiting for redirect to login
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="animate-spin text-indigo-600" size={32} />
+      </div>
+    );
+  }
+
+  const handleSaveTransaction = (tx: Omit<import('../types').Transaction, 'id'>) => {
+    if (editingTransaction) {
+      handleUpdateTransaction(editingTransaction.id, tx);
+    } else {
+      handleAddTransaction(tx);
+    }
+    setIsFormOpen(false);
+    setEditingTransaction(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 pb-20">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-4">
+              {isDemoMode && (
+                <span className="shrink-0 rounded-md bg-amber-100 text-amber-900 text-[10px] sm:text-xs font-bold px-2 py-1 border border-amber-200 tracking-wide">
+                  TEST VIEW
+                </span>
+              )}
+              {exchangeRate && (
+                <div className="flex items-center gap-2 bg-gray-50 px-2 sm:px-3 py-1.5 rounded-lg border border-gray-200">
+                  <div className="text-[10px] sm:text-xs text-gray-600">
+                    <span className="font-semibold">$1 = ₪{exchangeRate.usdToIls.toFixed(2)}</span>
+                    <span className="mx-1 sm:mx-1.5 text-gray-400">•</span>
+                    <span className="font-semibold">₪1 = ${exchangeRate.ilsToUsd.toFixed(4)}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2">
+                <div className="bg-indigo-600 p-2 rounded-lg text-white">
+                  <Wallet size={20} />
+                </div>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight hidden md:block">Family Budget</h1>
+              </div>
+
+              <div className="h-6 w-px bg-gray-200 hidden md:block"></div>
+
+              <YearSelector
+                availableYears={availableYears}
+                selectedYears={selectedYears}
+                onChange={setSelectedYears}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              {dataLoading && <Loader2 className="animate-spin text-indigo-600 hidden sm:block" size={16} />}
+              <div className="hidden md:flex flex-col items-end mr-2">
+                <span className="text-xs font-bold text-gray-700">{user.name}</span>
+                <span className="text-[10px] text-gray-400">{user.email}</span>
+              </div>
+              <button
+                onClick={() => {
+                  setEditingTransaction(null);
+                  setIsFormOpen(true);
+                }}
+                className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+              >
+                <Plus size={18} />
+                <span className="hidden sm:inline">Add</span>
+              </button>
+              <button
+                onClick={handleLogout}
+                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                title={isDemoMode ? 'Exit demo' : 'Sign Out'}
+              >
+                <LogOut size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Family Invite Banner */}
+        {!isDemoMode && (
+          <div className="flex justify-end mb-4">
+            <FamilyManager />
+          </div>
+        )}
+
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-xl mb-8 w-full sm:w-auto overflow-x-auto">
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
+                  isActive ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`
+              }
+            >
+              <Icon size={18} />
+              {label}
+            </NavLink>
+          ))}
+        </div>
+
+        {/* Page Content */}
+        <Outlet />
+      </main>
+
+      {/* Transaction Form Modal */}
+      {isFormOpen && (
+        <TransactionForm
+          transaction={editingTransaction || undefined}
+          onSave={handleSaveTransaction}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingTransaction(null);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+export const AppShell: React.FC = () => {
+  return (
+    <AppProvider>
+      <AppShellInner />
+    </AppProvider>
+  );
+};

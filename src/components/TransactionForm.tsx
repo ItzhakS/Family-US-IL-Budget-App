@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Transaction, TransactionType, ReceiptData, Currency } from '../types';
-import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../constants';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../lib/constants';
 import { X, Loader2, Camera } from 'lucide-react';
 import { parseReceiptImage } from '../services/geminiService';
 

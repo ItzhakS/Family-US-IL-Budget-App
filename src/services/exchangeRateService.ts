@@ -1,4 +1,4 @@
-import { supabase } from '../supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 const OPEN_EXCHANGE_RATES_API_KEY = '6fde696385c042f9a59d474ccaee3ff6';
 const API_BASE_URL = 'https://openexchangerates.org/api';

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 import { UserPlus, Loader2, Check } from 'lucide-react';
 
 export const FamilyManager: React.FC = () => {
