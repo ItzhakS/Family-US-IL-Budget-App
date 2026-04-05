@@ -2,7 +2,9 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import { useTransactions } from '../contexts/TransactionsContext';
 import { useShell } from '../contexts/ShellContext';
 import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
+import { useTransactionListFilterState } from '../hooks/useTransactionListFilterState';
 import { TransactionList } from '../components/TransactionList';
+import { TransactionListFilters } from '../components/TransactionListFilters';
 import { AnalysisPanel } from '../components/AnalysisPanel';
 
 export const DashboardPage: React.FC = () => {
@@ -15,6 +17,9 @@ export const DashboardPage: React.FC = () => {
     getMonthlyData,
     getCategoryData,
   } = useBudgetCalculations(transactions, selectedYears, exchangeRate);
+
+  const { listDisplayTransactions, listEmptyMessage, transactionListFilterProps } =
+    useTransactionListFilterState(yearFilteredTransactions, selectedYears);
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -110,10 +115,16 @@ export const DashboardPage: React.FC = () => {
 
       <div className="lg:col-span-2 space-y-4">
         <h2 className="text-lg font-bold text-gray-900 border-b pb-2 border-gray-100">Recent Transactions</h2>
+        <p className="text-xs text-gray-500">
+          List defaults to this calendar month (your device time zone). Charts above still follow the selected year
+          range.
+        </p>
+        <TransactionListFilters {...transactionListFilterProps} />
         <TransactionList
-          transactions={yearFilteredTransactions}
+          transactions={listDisplayTransactions}
           onDelete={(id) => void remove(id)}
           onEdit={openEditForm}
+          emptyMessage={listEmptyMessage}
         />
       </div>
 

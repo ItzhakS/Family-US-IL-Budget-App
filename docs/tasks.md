@@ -46,11 +46,11 @@
 
 ## Phase 1 — List + categories + FX snapshot
 
-- [ ] **P1.1** `[TAG:List]` Default transaction list to **current calendar month** (browser-local TZ), without removing access to other periods. — _Done when:_ Page load shows current month only; user can change filter.
-- [ ] **P1.2** `[TAG:List]` Add text search control filtering by **description** (case-insensitive). — _Done when:_ Typing filters list instantly.
-- [ ] **P1.3** `[TAG:List]` Extend search to also match **category**. — _Done when:_ Search finds transactions by category name.
-- [ ] **P1.4** `[TAG:List]` Add **type** filter (Income / Expense / All). — _Done when:_ Filter narrows list correctly.
-- [ ] **P1.5** `[TAG:List]` Add **currency** filter (ILS / USD / All). — _Done when:_ Filter narrows list correctly.
+- [x] ~~**P1.1** `[TAG:List]` Default transaction list to **current calendar month** (browser-local TZ), without removing access to other periods. — _Done when:_ Page load shows current month only; user can change filter.~~
+- [x] ~~**P1.2** `[TAG:List]` Add text search control filtering by **description** (case-insensitive). — _Done when:_ Typing filters list instantly.~~
+- [x] ~~**P1.3** `[TAG:List]` Extend search to also match **category**. — _Done when:_ Search finds transactions by category name.~~
+- [x] ~~**P1.4** `[TAG:List]` Add **type** filter (Income / Expense / All). — _Done when:_ Filter narrows list correctly.~~
+- [x] ~~**P1.5** `[TAG:List]` Add **currency** filter (ILS / USD / All). — _Done when:_ Filter narrows list correctly.~~
 - [ ] **P1.6** `[TAG:Categories]` Create `categories` table with `family_id`, `name`, `kind`, `sort_order`, timestamps. Add RLS. — _Done when:_ Table exists, RLS enforced.
 - [ ] **P1.7** `[TAG:Categories]` Seed each family's categories from `constants.ts` (migration or idempotent job). — _Done when:_ Every existing family has categories in DB.
 - [ ] **P1.8** `[TAG:Categories]` Load category options in `TransactionForm` from Supabase (read-only, no CRUD UI yet). — _Done when:_ Form dropdown shows DB categories.
