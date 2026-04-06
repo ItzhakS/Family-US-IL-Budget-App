@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Transaction, TransactionType, ReceiptData, Currency } from '../types';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../lib/constants';
 import { X, Loader2, Camera } from 'lucide-react';
 import { parseReceiptImage } from '../services/geminiService';
+import { useCategories } from '../contexts/CategoriesContext';
 
 interface TransactionFormProps {
   transaction?: Transaction;
@@ -11,6 +12,24 @@ interface TransactionFormProps {
 }
 
 export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, onSave, onClose }) => {
+  const { categories } = useCategories();
+
+  const expenseOptions = useMemo(() => {
+    const fromDb = categories
+      .filter((c) => c.kind === TransactionType.EXPENSE)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+      .map((c) => c.name);
+    return fromDb.length ? fromDb : EXPENSE_CATEGORIES;
+  }, [categories]);
+
+  const incomeOptions = useMemo(() => {
+    const fromDb = categories
+      .filter((c) => c.kind === TransactionType.INCOME)
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+      .map((c) => c.name);
+    return fromDb.length ? fromDb : INCOME_CATEGORIES;
+  }, [categories]);
+
   const [type, setType] = useState<TransactionType>(transaction?.type || TransactionType.EXPENSE);
   const [currency, setCurrency] = useState<Currency>(transaction?.currency || 'ILS');
   const [amount, setAmount] = useState<string>(transaction?.amount.toString() || '');
@@ -64,6 +83,20 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
     }
   }, [transaction]);
 
+  const optionsForType = type === TransactionType.EXPENSE ? expenseOptions : incomeOptions;
+
+  useEffect(() => {
+    if (!optionsForType.length) return;
+    const holdingLegacySavedLabel =
+      !!transaction &&
+      category === transaction.category &&
+      !optionsForType.includes(category);
+    if (holdingLegacySavedLabel) return;
+    if (!optionsForType.includes(category)) {
+      setCategory(optionsForType[0]);
+    }
+  }, [type, optionsForType, category, transaction]);
+
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -111,7 +144,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
         if (data.merchant) setDescription(data.merchant);
         if (data.date) setDate(data.date);
         if (data.currency) setCurrency(data.currency);
-        if (data.category && EXPENSE_CATEGORIES.includes(data.category)) {
+        if (data.category && expenseOptions.includes(data.category)) {
           setCategory(data.category);
           setType(TransactionType.EXPENSE);
         }
@@ -173,7 +206,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
               className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${type === TransactionType.EXPENSE ? 'bg-white text-red-600 shadow-sm' : 'text-gray-500'}`}
               onClick={() => {
                 setType(TransactionType.EXPENSE);
-                setCategory(EXPENSE_CATEGORIES[0]);
+                setCategory(expenseOptions[0] ?? EXPENSE_CATEGORIES[0]);
               }}
             >
               Expense
@@ -183,7 +216,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
               className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${type === TransactionType.INCOME ? 'bg-white text-green-600 shadow-sm' : 'text-gray-500'}`}
               onClick={() => {
                 setType(TransactionType.INCOME);
-                setCategory(INCOME_CATEGORIES[0]);
+                setCategory(incomeOptions[0] ?? INCOME_CATEGORIES[0]);
               }}
             >
               Income
@@ -252,8 +285,13 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white"
               >
-                {(type === TransactionType.EXPENSE ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map(c => (
-                  <option key={c} value={c}>{c}</option>
+                {transaction && !optionsForType.includes(category) && (
+                  <option value={category}>{category} (saved label)</option>
+                )}
+                {optionsForType.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
             </div>

@@ -5,6 +5,17 @@ export enum TransactionType {
 
 export type Currency = 'ILS' | 'USD';
 
+/** DB: `categories` row; `kind` matches income vs expense picker in the transaction form. */
+export interface Category {
+  id: string;
+  familyId: string;
+  name: string;
+  kind: TransactionType;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface User {
   id: string;
   name: string;

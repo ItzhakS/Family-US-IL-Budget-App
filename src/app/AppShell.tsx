@@ -12,9 +12,11 @@ import {
   Loader2,
   Database,
   Key,
+  Settings,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { TransactionsProvider, useTransactions } from '../contexts/TransactionsContext';
+import { CategoriesProvider } from '../contexts/CategoriesContext';
 import { ShellProvider, useShell } from '../contexts/ShellContext';
 import { YearSelector } from '../components/YearSelector';
 import { FamilyManager } from '../components/FamilyManager';
@@ -28,6 +30,7 @@ const navItems = [
   { to: '/recurring', label: 'Recurring', icon: CalendarClock },
   { to: '/investments', label: 'Inv/Tax', icon: Briefcase },
   { to: '/yearly', label: 'Yearly', icon: Calendar },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 const AppShellInner: React.FC = () => {
@@ -252,10 +255,12 @@ const AppShellInner: React.FC = () => {
 
 export const AppShell: React.FC = () => {
   return (
-    <TransactionsProvider>
-      <ShellProvider>
-        <AppShellInner />
-      </ShellProvider>
-    </TransactionsProvider>
+    <CategoriesProvider>
+      <TransactionsProvider>
+        <ShellProvider>
+          <AppShellInner />
+        </ShellProvider>
+      </TransactionsProvider>
+    </CategoriesProvider>
   );
 };

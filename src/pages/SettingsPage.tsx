@@ -1,12 +1,18 @@
 import { Settings } from 'lucide-react';
+import { CategorySettings } from '../components/CategorySettings';
 
 export const SettingsPage: React.FC = () => {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
-      <Settings size={48} className="mx-auto text-gray-300 mb-4" />
-      <h3 className="text-lg font-bold text-gray-900">Settings</h3>
-      <p className="text-gray-500 mt-2">
-        Settings page coming soon. This will include category management, dark mode toggle, and profile settings.
+    <div className="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center gap-3">
+        <Settings size={28} className="text-text-secondary dark:text-gray-400" aria-hidden />
+        <h1 className="text-xl font-bold text-text-primary dark:text-gray-50">Settings</h1>
+      </div>
+
+      <CategorySettings />
+
+      <p className="text-center text-sm text-text-secondary dark:text-gray-400">
+        More settings (theme, profile) will appear here in a later phase.
       </p>
     </div>
   );

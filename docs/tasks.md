@@ -51,11 +51,11 @@
 - [x] ~~**P1.3** `[TAG:List]` Extend search to also match **category**. — _Done when:_ Search finds transactions by category name.~~
 - [x] ~~**P1.4** `[TAG:List]` Add **type** filter (Income / Expense / All). — _Done when:_ Filter narrows list correctly.~~
 - [x] ~~**P1.5** `[TAG:List]` Add **currency** filter (ILS / USD / All). — _Done when:_ Filter narrows list correctly.~~
-- [ ] **P1.6** `[TAG:Categories]` Create `categories` table with `family_id`, `name`, `kind`, `sort_order`, timestamps. Add RLS. — _Done when:_ Table exists, RLS enforced.
-- [ ] **P1.7** `[TAG:Categories]` Seed each family's categories from `constants.ts` (migration or idempotent job). — _Done when:_ Every existing family has categories in DB.
-- [ ] **P1.8** `[TAG:Categories]` Load category options in `TransactionForm` from Supabase (read-only, no CRUD UI yet). — _Done when:_ Form dropdown shows DB categories.
-- [ ] **P1.9** `[TAG:Categories]` Add UI to **create** a new family category. — _Done when:_ New category appears in form select.
-- [ ] **P1.10** `[TAG:Categories]` Add UI to **rename** an existing category. Define policy for past transactions in this task. — _Done when:_ Rename works, policy documented.
+- [x] ~~**P1.6** `[TAG:Categories]` Create `categories` table with `family_id`, `name`, `kind`, `sort_order`, timestamps. Add RLS. — _Done when:_ Table exists, RLS enforced.~~
+- [x] ~~**P1.7** `[TAG:Categories]` Seed each family's categories from `constants.ts` (migration or idempotent job). — _Done when:_ Every existing family has categories in DB.~~
+- [x] ~~**P1.8** `[TAG:Categories]` Load category options in `TransactionForm` from Supabase (read-only, no CRUD UI yet). — _Done when:_ Form dropdown shows DB categories.~~
+- [x] ~~**P1.9** `[TAG:Categories]` Add UI to **create** a new family category. — _Done when:_ New category appears in form select.~~
+- [x] ~~**P1.10** `[TAG:Categories]` Add UI to **rename** an existing category. Define policy for past transactions in this task. — _Done when:_ Rename works, policy documented.~~
 - [ ] **P1.11** `[TAG:FX]` Add nullable FX snapshot columns to `transactions` (e.g. `exchange_rate_usd_to_ils`, `fx_rate_date`). — _Done when:_ Columns exist, nullable.
 - [ ] **P1.12** `[TAG:FX]` On **create transaction**, persist FX snapshot from current rate. — _Done when:_ New transactions have FX populated.
 - [ ] **P1.13** `[TAG:FX]` On **edit transaction**, update FX snapshot **only when** amount or currency changes. — _Done when:_ Unrelated edits preserve original FX.
