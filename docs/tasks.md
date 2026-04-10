@@ -56,21 +56,21 @@
 - [x] ~~**P1.8** `[TAG:Categories]` Load category options in `TransactionForm` from Supabase (read-only, no CRUD UI yet). — _Done when:_ Form dropdown shows DB categories.~~
 - [x] ~~**P1.9** `[TAG:Categories]` Add UI to **create** a new family category. — _Done when:_ New category appears in form select.~~
 - [x] ~~**P1.10** `[TAG:Categories]` Add UI to **rename** an existing category. Define policy for past transactions in this task. — _Done when:_ Rename works, policy documented.~~
-- [ ] **P1.11** `[TAG:FX]` Add nullable FX snapshot columns to `transactions` (e.g. `exchange_rate_usd_to_ils`, `fx_rate_date`). — _Done when:_ Columns exist, nullable.
-- [ ] **P1.12** `[TAG:FX]` On **create transaction**, persist FX snapshot from current rate. — _Done when:_ New transactions have FX populated.
-- [ ] **P1.13** `[TAG:FX]` On **edit transaction**, update FX snapshot **only when** amount or currency changes. — _Done when:_ Unrelated edits preserve original FX.
+- [x] ~~**P1.11** `[TAG:FX]` Add nullable FX snapshot columns to `transactions` (e.g. `exchange_rate_usd_to_ils`, `fx_rate_date`). — _Done when:_ Columns exist, nullable.~~
+- [x] ~~**P1.12** `[TAG:FX]` On **create transaction**, persist FX snapshot from current rate. — _Done when:_ New transactions have FX populated.~~
+- [x] ~~**P1.13** `[TAG:FX]` On **edit transaction**, update FX snapshot **only when** amount or currency changes. — _Done when:_ Unrelated edits preserve original FX.~~
 
 ---
 
 ## Phase 2 — Recurring + copy
 
-- [ ] **P2.1** `[TAG:Recurring]` Add DB + types for **cancelled** state (`recurring_cancelled_at` or `recurring_active`). Migration + TypeScript only. — _Done when:_ Column exists, types updated.
-- [ ] **P2.2** `[TAG:Recurring]` Add UI action to **cancel recurring** for one transaction. — _Done when:_ Cancelled row stops appearing as recurring.
-- [ ] **P2.3** `[TAG:Recurring]` Add DB + types for **remaining payment count** (nullable = unlimited). — _Done when:_ Column exists, types updated.
-- [ ] **P2.4** `[TAG:Recurring]` Add UI to set **max remaining payments**. — _Done when:_ User can set count, value stored.
-- [ ] **P2.5** `[TAG:Recurring]` Implement **decrement** of remaining count on explicit "record payment" event. — _Done when:_ Count decreases on payment.
-- [ ] **P2.6** `[TAG:Copy]` Add **Copy** action on transaction row → opens `TransactionForm` prefilled as new. — _Done when:_ Copy button visible, form opens prefilled.
-- [ ] **P2.7** `[TAG:Copy]` Prefill sets **date to today**, keeps other fields. — _Done when:_ Copied transaction has today's date.
+- [x] ~~**P2.1** `[TAG:Recurring]` Add DB + types for **cancelled** state (`recurring_cancelled_at` or `recurring_active`). Migration + TypeScript only. — _Done when:_ Column exists, types updated.~~
+- [x] ~~**P2.2** `[TAG:Recurring]` Add UI action to **cancel recurring** for one transaction. — _Done when:_ Cancelled row stops appearing as recurring.~~
+- [x] ~~**P2.3** `[TAG:Recurring]` Add DB + types for **remaining payment count** (nullable = unlimited). — _Done when:_ Column exists, types updated.~~
+- [x] ~~**P2.4** `[TAG:Recurring]` Add UI to set **max remaining payments**. — _Done when:_ User can set count, value stored.~~
+- [x] ~~**P2.5** `[TAG:Recurring]` Implement **decrement** of remaining count on explicit "record payment" event. — _Done when:_ Count decreases on payment.~~
+- [x] ~~**P2.6** `[TAG:Copy]` Add **Copy** action on transaction row → opens `TransactionForm` prefilled as new. — _Done when:_ Copy button visible, form opens prefilled.~~
+- [x] ~~**P2.7** `[TAG:Copy]` Prefill sets **date to today**, keeps other fields. — _Done when:_ Copied transaction has today's date.~~
 
 ---
 

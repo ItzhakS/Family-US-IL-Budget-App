@@ -4,7 +4,7 @@ import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
 import { RecurringPanel } from '../components/RecurringPanel';
 
 export const RecurringPage: React.FC = () => {
-  const { transactions } = useTransactions();
+  const { transactions, update } = useTransactions();
   const { selectedYears, exchangeRate } = useShell();
   const { yearFilteredTransactions } = useBudgetCalculations(
     transactions,
@@ -12,5 +12,10 @@ export const RecurringPage: React.FC = () => {
     exchangeRate
   );
 
-  return <RecurringPanel transactions={yearFilteredTransactions} />;
+  return (
+    <RecurringPanel
+      transactions={yearFilteredTransactions}
+      onUpdateTransaction={(id, patch) => void update(id, patch)}
+    />
+  );
 };

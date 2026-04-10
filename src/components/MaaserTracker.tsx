@@ -190,52 +190,47 @@ export const MaaserSummaryPanel: React.FC<{
   );
 };
 
+function maaserSym(c: Currency) {
+  return c === 'ILS' ? '₪' : '$';
+}
+
 /** Ma&apos;aser-related transaction rows (deductibles + payments), after list filters. */
 export const MaaserTransactionListPanel: React.FC<{
   transactions: Transaction[];
-  currency: Currency;
+  /** Omit for a combined ILS+USD list (e.g. single mobile card). */
+  currency?: Currency;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }> = ({ transactions, currency, onEdit, onDelete }) => {
-  const currencySymbol = currency === 'ILS' ? '₪' : '$';
+  const mixed = currency === undefined;
+  const titleSuffix = mixed ? 'ILS & USD' : currency;
+  const rows =
+    transactions.length > 0 ? [...transactions].sort((a, b) => b.date.localeCompare(a.date)) : [];
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="p-4 border-b border-gray-100">
         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Heart className="text-pink-500" size={18} />
-          Ma&apos;aser Transactions ({currency})
+          <Heart className="text-pink-500 shrink-0" size={18} />
+          <span className="min-w-0">Ma&apos;aser Transactions ({titleSuffix})</span>
         </h3>
         <p className="text-xs text-gray-500 mt-1">Deductible expenses and charity payments</p>
       </div>
-      <div className="overflow-x-auto">
-        {transactions.length > 0 ? (
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-100">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Description
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {transactions.map((t) => (
-                <tr key={t.id} className="hover:bg-gray-50 transition-colors group">
-                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{t.date}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 font-medium">{t.description}</td>
-                  <td className="px-4 py-3 text-sm">
+      {rows.length > 0 ? (
+        <>
+          <div className="lg:hidden divide-y divide-gray-100">
+            {rows.map((t) => {
+              const currencySymbol = maaserSym(t.currency);
+              return (
+                <div key={t.id} className="p-4 space-y-2">
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span className="text-gray-500 shrink-0">{t.date}</span>
+                    {mixed && (
+                      <span className="text-[10px] font-semibold uppercase text-gray-400">{t.currency}</span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 break-words">{t.description}</p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         t.isMaaserPayment ? 'bg-pink-100 text-pink-800' : 'bg-amber-100 text-amber-800'
@@ -243,23 +238,22 @@ export const MaaserTransactionListPanel: React.FC<{
                     >
                       {t.isMaaserPayment ? 'Charity Payment' : 'Deductible'}
                     </span>
-                  </td>
-                  <td
-                    className={`px-4 py-3 text-sm font-bold text-right whitespace-nowrap ${
-                      t.isMaaserPayment ? 'text-pink-600' : 'text-amber-600'
-                    }`}
-                  >
-                    {currencySymbol}
-                    {t.amount.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <span
+                      className={`text-sm font-bold tabular-nums ${
+                        t.isMaaserPayment ? 'text-pink-600' : 'text-amber-600'
+                      }`}
+                    >
+                      {currencySymbol}
+                      {t.amount.toLocaleString()}
+                    </span>
+                  </div>
+                  {(onEdit || onDelete) && (
+                    <div className="flex justify-end gap-2 pt-1">
                       {onEdit && (
                         <button
                           type="button"
                           onClick={() => onEdit(t.id)}
-                          className="text-gray-400 hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
-                          title="Edit transaction"
+                          className="text-gray-500 hover:text-indigo-500 p-1.5 rounded-lg hover:bg-gray-50"
                           aria-label="Edit transaction"
                         >
                           <Edit size={16} />
@@ -269,26 +263,113 @@ export const MaaserTransactionListPanel: React.FC<{
                         <button
                           type="button"
                           onClick={() => onDelete(t.id)}
-                          className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
-                          title="Delete transaction"
+                          className="text-gray-500 hover:text-red-500 p-1.5 rounded-lg hover:bg-gray-50"
                           aria-label="Delete transaction"
                         >
                           <Trash2 size={16} />
                         </button>
                       )}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <div className="p-8 text-center text-gray-400">
-            <p className="text-sm">No matching ma&apos;aser transactions.</p>
-            <p className="text-xs mt-1">Widen month, search, or currency filters above.</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        )}
-      </div>
+
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Date
+                  </th>
+                  {mixed && (
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Curr
+                    </th>
+                  )}
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {rows.map((t) => {
+                  const currencySymbol = maaserSym(t.currency);
+                  return (
+                    <tr key={t.id} className="hover:bg-gray-50 transition-colors group">
+                      <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{t.date}</td>
+                      {mixed && (
+                        <td className="px-4 py-3 text-xs font-medium text-gray-600 whitespace-nowrap">{t.currency}</td>
+                      )}
+                      <td className="px-4 py-3 text-sm text-gray-900 font-medium max-w-xs break-words">
+                        {t.description}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            t.isMaaserPayment ? 'bg-pink-100 text-pink-800' : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {t.isMaaserPayment ? 'Charity Payment' : 'Deductible'}
+                        </span>
+                      </td>
+                      <td
+                        className={`px-4 py-3 text-sm font-bold text-right whitespace-nowrap ${
+                          t.isMaaserPayment ? 'text-pink-600' : 'text-amber-600'
+                        }`}
+                      >
+                        {currencySymbol}
+                        {t.amount.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {onEdit && (
+                            <button
+                              type="button"
+                              onClick={() => onEdit(t.id)}
+                              className="text-gray-400 hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+                              title="Edit transaction"
+                              aria-label="Edit transaction"
+                            >
+                              <Edit size={16} />
+                            </button>
+                          )}
+                          {onDelete && (
+                            <button
+                              type="button"
+                              onClick={() => onDelete(t.id)}
+                              className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+                              title="Delete transaction"
+                              aria-label="Delete transaction"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <div className="p-8 text-center text-gray-400">
+          <p className="text-sm">No matching ma&apos;aser transactions.</p>
+          <p className="text-xs mt-1">Widen month, search, or currency filters above.</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -6,7 +6,7 @@ import { InvestmentsPanel } from '../components/InvestmentsPanel';
 export const InvestmentsPage: React.FC = () => {
   const { transactions, remove } = useTransactions();
   const { selectedYears, exchangeRate, openEditForm } = useShell();
-  const { yearFilteredTransactions } = useBudgetCalculations(
+  const { yearFilteredTransactions, sumTransactionsAsCurrency } = useBudgetCalculations(
     transactions,
     selectedYears,
     exchangeRate
@@ -15,6 +15,7 @@ export const InvestmentsPage: React.FC = () => {
   return (
     <InvestmentsPanel
       transactions={yearFilteredTransactions}
+      sumTransactionsAsCurrency={sumTransactionsAsCurrency}
       onEdit={openEditForm}
       onDelete={(id) => void remove(id)}
     />

@@ -7,11 +7,18 @@ import { useCategories } from '../contexts/CategoriesContext';
 
 interface TransactionFormProps {
   transaction?: Transaction;
+  /** Create new row prefilled from this transaction (date reset to today in form). */
+  copyFrom?: Transaction;
   onSave: (transaction: Omit<Transaction, 'id'>) => void;
   onClose: () => void;
 }
 
-export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, onSave, onClose }) => {
+export const TransactionForm: React.FC<TransactionFormProps> = ({
+  transaction,
+  copyFrom,
+  onSave,
+  onClose,
+}) => {
   const { categories } = useCategories();
 
   const expenseOptions = useMemo(() => {
@@ -38,7 +45,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
   const [category, setCategory] = useState(transaction?.category || EXPENSE_CATEGORIES[0]);
   
   // Logic Flags
-  const [isRecurring, setIsRecurring] = useState(transaction?.isRecurring || false);
+  const [isRecurring, setIsRecurring] = useState(transaction?.isRecurring || copyFrom?.isRecurring || false);
+  const [recurringMaxRemaining, setRecurringMaxRemaining] = useState('');
   
   // Expense Classification helper
   const getExpenseClass = (tx?: Transaction): 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment' => {
@@ -52,7 +60,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
   };
   const [expenseClass, setExpenseClass] = useState<'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment'>(getExpenseClass(transaction));
 
-  // Update form when transaction prop changes
+  // Update form when transaction / copy source changes
   useEffect(() => {
     if (transaction) {
       setType(transaction.type);
@@ -62,7 +70,11 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
       setDate(transaction.date);
       setCategory(transaction.category);
       setIsRecurring(transaction.isRecurring || false);
-      // Determine expense class
+      setRecurringMaxRemaining(
+        transaction.recurringRemainingPayments != null
+          ? String(transaction.recurringRemainingPayments)
+          : ''
+      );
       let newExpenseClass: 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment' = 'household';
       if (transaction.isMaaserPayment) newExpenseClass = 'maaser_payment';
       else if (transaction.isMaaserDeductible) newExpenseClass = 'maaser_deductible';
@@ -70,8 +82,27 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
       else if (transaction.isInvestment) newExpenseClass = 'investment';
       else if (transaction.isTaxSavings) newExpenseClass = 'tax_savings';
       setExpenseClass(newExpenseClass);
+    } else if (copyFrom) {
+      setType(copyFrom.type);
+      setCurrency(copyFrom.currency);
+      setAmount(copyFrom.amount.toString());
+      setDescription(copyFrom.description);
+      setDate(new Date().toISOString().split('T')[0]);
+      setCategory(copyFrom.category);
+      setIsRecurring(copyFrom.isRecurring || false);
+      setRecurringMaxRemaining(
+        copyFrom.recurringRemainingPayments != null
+          ? String(copyFrom.recurringRemainingPayments)
+          : ''
+      );
+      let newExpenseClass: 'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment' = 'household';
+      if (copyFrom.isMaaserPayment) newExpenseClass = 'maaser_payment';
+      else if (copyFrom.isMaaserDeductible) newExpenseClass = 'maaser_deductible';
+      else if (copyFrom.isTaxDeductible) newExpenseClass = 'tax_deductible';
+      else if (copyFrom.isInvestment) newExpenseClass = 'investment';
+      else if (copyFrom.isTaxSavings) newExpenseClass = 'tax_savings';
+      setExpenseClass(newExpenseClass);
     } else {
-      // Reset to defaults when no transaction (new transaction)
       setType(TransactionType.EXPENSE);
       setCurrency('ILS');
       setAmount('');
@@ -79,23 +110,23 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
       setDate(new Date().toISOString().split('T')[0]);
       setCategory(EXPENSE_CATEGORIES[0]);
       setIsRecurring(false);
+      setRecurringMaxRemaining('');
       setExpenseClass('household');
     }
-  }, [transaction]);
+  }, [transaction, copyFrom]);
 
   const optionsForType = type === TransactionType.EXPENSE ? expenseOptions : incomeOptions;
 
   useEffect(() => {
     if (!optionsForType.length) return;
+    const source = transaction ?? copyFrom;
     const holdingLegacySavedLabel =
-      !!transaction &&
-      category === transaction.category &&
-      !optionsForType.includes(category);
+      !!source && category === source.category && !optionsForType.includes(category);
     if (holdingLegacySavedLabel) return;
     if (!optionsForType.includes(category)) {
       setCategory(optionsForType[0]);
     }
-  }, [type, optionsForType, category, transaction]);
+  }, [type, optionsForType, category, transaction, copyFrom]);
 
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,6 +140,16 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
     const isInvestment = type === TransactionType.EXPENSE && expenseClass === 'investment';
     const isTaxSavings = type === TransactionType.EXPENSE && expenseClass === 'tax_savings';
     const isMaaserPayment = type === TransactionType.EXPENSE && expenseClass === 'maaser_payment';
+    const effectiveRecurring = type === TransactionType.EXPENSE && isRecurring;
+
+    let recurringRemainingPayments: number | null = null;
+    if (effectiveRecurring) {
+      const trimmed = recurringMaxRemaining.trim();
+      if (trimmed !== '') {
+        const n = Number.parseInt(trimmed, 10);
+        recurringRemainingPayments = Number.isNaN(n) || n < 0 ? null : n;
+      }
+    }
 
     onSave({
       date,
@@ -117,12 +158,14 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
       category,
       type,
       currency,
-      isRecurring,
+      isRecurring: effectiveRecurring,
       isMaaserDeductible,
       isTaxDeductible,
       isInvestment,
       isTaxSavings,
-      isMaaserPayment
+      isMaaserPayment,
+      recurringCancelledAt: effectiveRecurring ? (transaction?.recurringCancelledAt ?? null) : null,
+      recurringRemainingPayments: effectiveRecurring ? recurringRemainingPayments : null,
     });
     onClose();
   };
@@ -158,17 +201,36 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 relative shadow-xl my-8">
-        <button 
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+    <div
+      className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-black/50 p-4"
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="min-h-full flex items-start justify-center py-4 sm:items-center sm:py-8">
+        <div
+          className="bg-white rounded-2xl w-full max-w-md shadow-xl flex flex-col max-h-[min(calc(100dvh-2rem),48rem)] sm:max-h-[90vh]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="transaction-form-title"
+          onClick={(e) => e.stopPropagation()}
         >
-          <X size={24} />
-        </button>
-        
-        <h2 className="text-xl font-bold mb-6 text-gray-800">{transaction ? 'Edit Transaction' : 'Add Transaction'}</h2>
+          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-100 bg-white px-5 pt-4 pb-3 rounded-t-2xl">
+            <h2 id="transaction-form-title" className="text-xl font-bold text-gray-800 pr-2">
+              {transaction ? 'Edit Transaction' : 'Add Transaction'}
+            </h2>
+            <button
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Close"
+            >
+              <X size={22} />
+            </button>
+          </div>
 
+          <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-4">
         {/* AI Receipt Scan */}
         <div className="mb-6">
           <input 
@@ -285,7 +347,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
                 onChange={(e) => setCategory(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all bg-white"
               >
-                {transaction && !optionsForType.includes(category) && (
+                {(transaction ?? copyFrom) && !optionsForType.includes(category) && (
                   <option value={category}>{category} (saved label)</option>
                 )}
                 {optionsForType.map((c) => (
@@ -396,6 +458,24 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
                   />
                   <label htmlFor="isRecurring" className="ml-2 text-sm text-gray-700">Monthly Recurring Bill</label>
                 </div>
+                {isRecurring && (
+                  <div className="mt-3">
+                    <label htmlFor="recurringMaxRemaining" className="block text-sm font-medium text-gray-700 mb-1">
+                      Max remaining payments
+                    </label>
+                    <input
+                      id="recurringMaxRemaining"
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={recurringMaxRemaining}
+                      onChange={(e) => setRecurringMaxRemaining(e.target.value)}
+                      placeholder="Unlimited if empty"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave blank for no limit. Use the Recurring page to record each payment against this count.</p>
+                  </div>
+                )}
              </div>
           )}
 
@@ -406,6 +486,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({ transaction, o
             {transaction ? 'Update Transaction' : 'Save Transaction'}
           </button>
         </form>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -31,7 +31,12 @@ export interface Transaction {
   category: string;
   type: TransactionType;
   currency: Currency;
-  
+
+  /** Snapshot when saved: 1 USD = X ILS (nullable for legacy rows or when FX unavailable). */
+  exchangeRateUsdToIls?: number | null;
+  /** Calendar date for the FX row above (YYYY-MM-DD). */
+  fxRateDate?: string | null;
+
   // Specific Flags
   isMaaserDeductible?: boolean; // Business exp that reduces Ma'aser obligation (Show in Maaser tab only)
   isMaaserPayment?: boolean;    // Payment to charity (Show in Maaser tab)
@@ -39,6 +44,10 @@ export interface Transaction {
   isInvestment?: boolean;       // Investment deposits (Show in Inv/Tax tab)
   isTaxSavings?: boolean;       // Tax savings deposits (Show in Inv/Tax tab)
   isRecurring?: boolean;        // Monthly recurring bills (Show in Recurring tab)
+  /** When set, recurring is cancelled (hidden from active recurring list). */
+  recurringCancelledAt?: string | null;
+  /** Payments remaining for a finite subscription; null = unlimited. */
+  recurringRemainingPayments?: number | null;
 }
 
 export interface BudgetSummary {

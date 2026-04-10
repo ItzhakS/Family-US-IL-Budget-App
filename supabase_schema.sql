@@ -30,6 +30,10 @@ create table transactions (
   is_tax_deductible boolean default false,
   is_investment boolean default false,
   is_tax_savings boolean default false,
+  exchange_rate_usd_to_ils numeric,
+  fx_rate_date date,
+  recurring_cancelled_at timestamp with time zone,
+  recurring_remaining_payments integer,
   family_id uuid not null -- This links data to the family, not just the user
 );
 

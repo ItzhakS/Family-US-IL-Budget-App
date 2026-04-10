@@ -7,39 +7,47 @@ import { TransactionType } from '../types';
 export const YearlySummaryPage: React.FC = () => {
   const { transactions } = useTransactions();
   const { selectedYears, exchangeRate } = useShell();
-  const { yearFilteredTransactions, dashboardTransactions, convertCurrency } = useBudgetCalculations(
+  const { yearFilteredTransactions, dashboardTransactions, sumTransactionsAsCurrency } = useBudgetCalculations(
     transactions,
     selectedYears,
     exchangeRate
   );
 
-  const ilsIncome = yearFilteredTransactions
-    .filter((t) => t.currency === 'ILS' && t.type === TransactionType.INCOME)
-    .reduce((acc, t) => acc + t.amount, 0);
-  const ilsHouseholdExp = dashboardTransactions
-    .filter((t) => t.currency === 'ILS' && t.type === TransactionType.EXPENSE)
-    .reduce((acc, t) => acc + t.amount, 0);
-  const ilsBusinessDeductibles = yearFilteredTransactions
-    .filter((t) => t.currency === 'ILS' && (t.isMaaserDeductible || t.isTaxDeductible))
-    .reduce((acc, t) => acc + t.amount, 0);
+  const ilsIncomeTxs = yearFilteredTransactions.filter(
+    (t) => t.currency === 'ILS' && t.type === TransactionType.INCOME
+  );
+  const ilsHouseholdExpTxs = dashboardTransactions.filter(
+    (t) => t.currency === 'ILS' && t.type === TransactionType.EXPENSE
+  );
+  const ilsBusinessDeductibleTxs = yearFilteredTransactions.filter(
+    (t) => t.currency === 'ILS' && (t.isMaaserDeductible || t.isTaxDeductible)
+  );
 
-  const usdIncome = yearFilteredTransactions
-    .filter((t) => t.currency === 'USD' && t.type === TransactionType.INCOME)
-    .reduce((acc, t) => acc + t.amount, 0);
-  const usdHouseholdExp = dashboardTransactions
-    .filter((t) => t.currency === 'USD' && t.type === TransactionType.EXPENSE)
-    .reduce((acc, t) => acc + t.amount, 0);
-  const usdBusinessDeductibles = yearFilteredTransactions
-    .filter((t) => t.currency === 'USD' && (t.isMaaserDeductible || t.isTaxDeductible))
-    .reduce((acc, t) => acc + t.amount, 0);
+  const usdIncomeTxs = yearFilteredTransactions.filter(
+    (t) => t.currency === 'USD' && t.type === TransactionType.INCOME
+  );
+  const usdHouseholdExpTxs = dashboardTransactions.filter(
+    (t) => t.currency === 'USD' && t.type === TransactionType.EXPENSE
+  );
+  const usdBusinessDeductibleTxs = yearFilteredTransactions.filter(
+    (t) => t.currency === 'USD' && (t.isMaaserDeductible || t.isTaxDeductible)
+  );
 
-  const ilsIncomeInUsd = convertCurrency(ilsIncome, 'ILS', 'USD');
-  const ilsHouseholdExpInUsd = convertCurrency(ilsHouseholdExp, 'ILS', 'USD');
-  const ilsBusinessDeductiblesInUsd = convertCurrency(ilsBusinessDeductibles, 'ILS', 'USD');
+  const ilsIncome = ilsIncomeTxs.reduce((acc, t) => acc + t.amount, 0);
+  const ilsHouseholdExp = ilsHouseholdExpTxs.reduce((acc, t) => acc + t.amount, 0);
+  const ilsBusinessDeductibles = ilsBusinessDeductibleTxs.reduce((acc, t) => acc + t.amount, 0);
 
-  const usdIncomeInIls = convertCurrency(usdIncome, 'USD', 'ILS');
-  const usdHouseholdExpInIls = convertCurrency(usdHouseholdExp, 'USD', 'ILS');
-  const usdBusinessDeductiblesInIls = convertCurrency(usdBusinessDeductibles, 'USD', 'ILS');
+  const usdIncome = usdIncomeTxs.reduce((acc, t) => acc + t.amount, 0);
+  const usdHouseholdExp = usdHouseholdExpTxs.reduce((acc, t) => acc + t.amount, 0);
+  const usdBusinessDeductibles = usdBusinessDeductibleTxs.reduce((acc, t) => acc + t.amount, 0);
+
+  const ilsIncomeInUsd = sumTransactionsAsCurrency(ilsIncomeTxs, 'USD');
+  const ilsHouseholdExpInUsd = sumTransactionsAsCurrency(ilsHouseholdExpTxs, 'USD');
+  const ilsBusinessDeductiblesInUsd = sumTransactionsAsCurrency(ilsBusinessDeductibleTxs, 'USD');
+
+  const usdIncomeInIls = sumTransactionsAsCurrency(usdIncomeTxs, 'ILS');
+  const usdHouseholdExpInIls = sumTransactionsAsCurrency(usdHouseholdExpTxs, 'ILS');
+  const usdBusinessDeductiblesInIls = sumTransactionsAsCurrency(usdBusinessDeductibleTxs, 'ILS');
 
   const totalIls = ilsIncome + (usdIncomeInIls || 0);
   const totalUsd = usdIncome + (ilsIncomeInUsd || 0);

@@ -92,7 +92,9 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
       const previous = transactions;
       setTransactions((prev) =>
-        sortTransactionsByDate(prev.map((t) => (t.id === id ? { ...tx, id } : t)))
+        sortTransactionsByDate(
+          prev.map((t) => (t.id === id ? { ...t, ...tx, id } : t))
+        )
       );
       try {
         await transactionService.update(id, tx);

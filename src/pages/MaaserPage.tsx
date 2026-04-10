@@ -47,7 +47,15 @@ export const MaaserPage: React.FC = () => {
         <TransactionListFilters {...transactionListFilterProps} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="lg:hidden">
+        <MaaserTransactionListPanel
+          transactions={filteredMaaser}
+          onEdit={openEditForm}
+          onDelete={(id) => void remove(id)}
+        />
+      </div>
+
+      <div className="hidden lg:grid lg:grid-cols-2 gap-8">
         <MaaserTransactionListPanel
           transactions={filteredMaaser.filter((t) => t.currency === 'ILS')}
           currency="ILS"

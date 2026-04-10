@@ -1,14 +1,47 @@
 import React from 'react';
-import { Transaction, TransactionType } from '../types';
+import { Transaction, TransactionType, Currency } from '../types';
 import { TrendingUp, Briefcase, Edit, Trash2 } from 'lucide-react';
+
+function CombinedFxTotals({
+  txs,
+  sumAsCurrency,
+}: {
+  txs: Transaction[];
+  sumAsCurrency: (txs: Transaction[], target: Currency) => number | null;
+}) {
+  if (txs.length === 0) return null;
+  const ils = sumAsCurrency(txs, 'ILS');
+  const usd = sumAsCurrency(txs, 'USD');
+  if (ils == null && usd == null) return null;
+  return (
+    <p className="text-xs text-gray-500 mt-2 dark:text-gray-400">
+      Combined in ILS (row FX → month avg → header):{' '}
+      <span className="font-medium text-gray-800 dark:text-gray-200">
+        {ils != null ? `₪${ils.toLocaleString()}` : '—'}
+      </span>
+      <span className="mx-2">·</span>
+      combined in USD:{' '}
+      <span className="font-medium text-gray-800 dark:text-gray-200">
+        {usd != null ? `$${usd.toLocaleString()}` : '—'}
+      </span>
+    </p>
+  );
+}
 
 interface InvestmentsPanelProps {
   transactions: Transaction[];
+  /** When set, shows combined cross-currency totals using per-transaction FX resolution. */
+  sumTransactionsAsCurrency?: (txs: Transaction[], target: Currency) => number | null;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
-export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions, onEdit, onDelete }) => {
+export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
+  transactions,
+  sumTransactionsAsCurrency,
+  onEdit,
+  onDelete,
+}) => {
   // Filter for Investments
   const investments = transactions.filter(t => t.type === TransactionType.EXPENSE && t.isInvestment);
   
@@ -51,6 +84,9 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
             <p className="text-2xl font-bold text-gray-900">${invTotals.usd.toLocaleString()}</p>
           </div>
         </div>
+        {sumTransactionsAsCurrency && (
+          <CombinedFxTotals txs={investments} sumAsCurrency={sumTransactionsAsCurrency} />
+        )}
 
         <h3 className="font-semibold text-gray-700 mb-3">Recent Deposits</h3>
         <div className="space-y-2">
@@ -110,6 +146,9 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
             <p className="text-2xl font-bold text-gray-900">${taxSavingsTotals.usd.toLocaleString()}</p>
           </div>
         </div>
+        {sumTransactionsAsCurrency && (
+          <CombinedFxTotals txs={taxSavings} sumAsCurrency={sumTransactionsAsCurrency} />
+        )}
 
         <h3 className="font-semibold text-gray-700 mb-3">Recent Deposits</h3>
         <div className="space-y-2">
@@ -172,6 +211,9 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({ transactions
             <p className="text-2xl font-bold text-gray-900">${taxTotals.usd.toLocaleString()}</p>
           </div>
         </div>
+        {sumTransactionsAsCurrency && (
+          <CombinedFxTotals txs={taxDeductibles} sumAsCurrency={sumTransactionsAsCurrency} />
+        )}
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">

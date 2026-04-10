@@ -30,7 +30,7 @@ function normalizeRawTransaction(raw: Record<string, unknown>): Transaction | nu
   if (typeof raw.category !== 'string' || !isTransactionType(raw.type)) return null;
   if (raw.currency !== 'ILS' && raw.currency !== 'USD') return null;
 
-  return {
+  const t: Transaction = {
     id: raw.id,
     date: raw.date,
     description: raw.description,
@@ -45,6 +45,30 @@ function normalizeRawTransaction(raw: Record<string, unknown>): Transaction | nu
     isTaxSavings: Boolean(raw.isTaxSavings),
     isRecurring: Boolean(raw.isRecurring),
   };
+
+  if ('recurringCancelledAt' in raw) {
+    const v = raw.recurringCancelledAt;
+    if (v === null) t.recurringCancelledAt = null;
+    else if (typeof v === 'string' && v.trim() !== '') t.recurringCancelledAt = v;
+  }
+  if ('recurringRemainingPayments' in raw) {
+    const v = raw.recurringRemainingPayments;
+    if (v === null) t.recurringRemainingPayments = null;
+    else if (typeof v === 'number' && !Number.isNaN(v)) t.recurringRemainingPayments = v;
+  }
+
+  if ('exchangeRateUsdToIls' in raw) {
+    const v = raw.exchangeRateUsdToIls;
+    if (v === null) t.exchangeRateUsdToIls = null;
+    else if (typeof v === 'number' && !Number.isNaN(v)) t.exchangeRateUsdToIls = v;
+  }
+  if ('fxRateDate' in raw) {
+    const v = raw.fxRateDate;
+    if (v === null) t.fxRateDate = null;
+    else if (typeof v === 'string') t.fxRateDate = v;
+  }
+
+  return t;
 }
 
 export function readDemoTransactions(): Transaction[] {

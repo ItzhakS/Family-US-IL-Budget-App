@@ -6,6 +6,7 @@ import {
   isDemoSessionActive,
 } from './demoStorage';
 import { getDemoSeedTransactions } from '../lib/demoSeedTransactions';
+import { getExchangeRate, getExchangeRateOffline } from './exchangeRateService';
 
 const sortTransactionsByDate = (txs: Transaction[]) =>
   [...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -17,7 +18,53 @@ function newDemoId(): string {
   return `demo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+/** FX source for persisting: demo / offline uses session cache + API; signed-in uses DB-backed global rate. */
+async function snapshotFxForPersist(): Promise<{
+  exchangeRateUsdToIls: number | null;
+  fxRateDate: string | null;
+}> {
+  const rate =
+    isDemoSessionActive() || !isSupabaseConfigured
+      ? await getExchangeRateOffline()
+      : await getExchangeRate();
+  if (!rate) return { exchangeRateUsdToIls: null, fxRateDate: null };
+  return { exchangeRateUsdToIls: rate.usdToIls, fxRateDate: rate.date };
+}
+
+function amountOrCurrencyChanged(a: Transaction, b: Omit<Transaction, 'id'>): boolean {
+  return a.amount !== b.amount || a.currency !== b.currency;
+}
+
+function mergeTxForUpdate(
+  existing: Transaction,
+  patch: Omit<Transaction, 'id'>,
+  fx: { exchangeRateUsdToIls: number | null; fxRateDate: string | null } | null,
+  refreshFx: boolean
+): Omit<Transaction, 'id'> {
+  if (refreshFx) {
+    return {
+      ...patch,
+      exchangeRateUsdToIls: fx?.exchangeRateUsdToIls ?? null,
+      fxRateDate: fx?.fxRateDate ?? null,
+    };
+  }
+  return {
+    ...patch,
+    exchangeRateUsdToIls: existing.exchangeRateUsdToIls ?? null,
+    fxRateDate: existing.fxRateDate ?? null,
+  };
+}
+
 export function mapRowToTransaction(t: Record<string, unknown>): Transaction {
+  const ex = t.exchange_rate_usd_to_ils;
+  const fxDate = t.fx_rate_date;
+
+  let exchangeRateUsdToIls: number | null = null;
+  if (ex !== null && ex !== undefined && String(ex).trim() !== '') {
+    const n = Number(ex);
+    exchangeRateUsdToIls = Number.isNaN(n) ? null : n;
+  }
+
   return {
     id: String(t.id),
     date: String(t.date),
@@ -26,13 +73,31 @@ export function mapRowToTransaction(t: Record<string, unknown>): Transaction {
     category: String(t.category),
     type: t.type as Transaction['type'],
     currency: t.currency as Transaction['currency'],
+    exchangeRateUsdToIls,
+    fxRateDate:
+      fxDate !== null && fxDate !== undefined && String(fxDate).trim() !== ''
+        ? String(fxDate).slice(0, 10)
+        : null,
     isMaaserDeductible: Boolean(t.is_maaser_deductible),
     isMaaserPayment: Boolean(t.is_maaser_payment),
     isTaxDeductible: Boolean(t.is_tax_deductible),
     isInvestment: Boolean(t.is_investment),
     isTaxSavings: Boolean(t.is_tax_savings),
     isRecurring: Boolean(t.is_recurring),
+    recurringCancelledAt: parseOptionalIso(t.recurring_cancelled_at),
+    recurringRemainingPayments: parseOptionalInt(t.recurring_remaining_payments),
   };
+}
+
+function parseOptionalIso(v: unknown): string | null {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  return String(v);
+}
+
+function parseOptionalInt(v: unknown): number | null {
+  if (v === null || v === undefined || String(v).trim() === '') return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
 }
 
 function transactionToInsertRow(
@@ -52,6 +117,10 @@ function transactionToInsertRow(
     is_tax_deductible: tx.isTaxDeductible ?? false,
     is_investment: tx.isInvestment ?? false,
     is_tax_savings: tx.isTaxSavings ?? false,
+    exchange_rate_usd_to_ils: tx.exchangeRateUsdToIls ?? null,
+    fx_rate_date: tx.fxRateDate ?? null,
+    recurring_cancelled_at: tx.recurringCancelledAt ?? null,
+    recurring_remaining_payments: tx.recurringRemainingPayments ?? null,
     family_id: familyId,
   };
 }
@@ -70,6 +139,10 @@ function transactionToUpdateRow(tx: Omit<Transaction, 'id'>): Record<string, unk
     is_tax_deductible: tx.isTaxDeductible ?? false,
     is_investment: tx.isInvestment ?? false,
     is_tax_savings: tx.isTaxSavings ?? false,
+    exchange_rate_usd_to_ils: tx.exchangeRateUsdToIls ?? null,
+    fx_rate_date: tx.fxRateDate ?? null,
+    recurring_cancelled_at: tx.recurringCancelledAt ?? null,
+    recurring_remaining_payments: tx.recurringRemainingPayments ?? null,
   };
 }
 
@@ -106,8 +179,15 @@ export async function getAll(): Promise<Transaction[]> {
 }
 
 export async function create(tx: Omit<Transaction, 'id'>): Promise<Transaction> {
+  const fx = await snapshotFxForPersist();
+  const withFx: Omit<Transaction, 'id'> = {
+    ...tx,
+    exchangeRateUsdToIls: fx.exchangeRateUsdToIls,
+    fxRateDate: fx.fxRateDate,
+  };
+
   if (isDemoSessionActive()) {
-    const row: Transaction = { ...tx, id: newDemoId() };
+    const row: Transaction = { ...withFx, id: newDemoId() };
     const next = sortTransactionsByDate([row, ...readDemoTransactions()]);
     writeDemoTransactions(next);
     return row;
@@ -117,7 +197,7 @@ export async function create(tx: Omit<Transaction, 'id'>): Promise<Transaction> 
   const familyId = await getProfileFamilyId();
   const { data, error } = await supabase
     .from('transactions')
-    .insert(transactionToInsertRow(tx, familyId))
+    .insert(transactionToInsertRow(withFx, familyId))
     .select()
     .single();
 
@@ -127,17 +207,36 @@ export async function create(tx: Omit<Transaction, 'id'>): Promise<Transaction> 
 
 export async function update(id: string, tx: Omit<Transaction, 'id'>): Promise<void> {
   if (isDemoSessionActive()) {
+    const all = readDemoTransactions();
+    const existing = all.find((t) => t.id === id);
+    if (!existing) throw new Error('Transaction not found');
+
+    const refreshFx = amountOrCurrencyChanged(existing, tx);
+    const fx = refreshFx ? await snapshotFxForPersist() : null;
+    const merged = mergeTxForUpdate(existing, tx, fx, refreshFx);
     const next = sortTransactionsByDate(
-      readDemoTransactions().map((t) => (t.id === id ? { ...tx, id } : t))
+      all.map((t) => (t.id === id ? { ...merged, id } : t))
     );
     writeDemoTransactions(next);
     return;
   }
   if (!isSupabaseConfigured) throw new Error('Supabase not configured');
 
+  const { data: existingRow, error: fetchErr } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (fetchErr || !existingRow) throw new Error('Transaction not found');
+  const existing = mapRowToTransaction(existingRow as Record<string, unknown>);
+  const refreshFx = amountOrCurrencyChanged(existing, tx);
+  const fx = refreshFx ? await snapshotFxForPersist() : null;
+  const merged = mergeTxForUpdate(existing, tx, fx, refreshFx);
+
   const { error } = await supabase
     .from('transactions')
-    .update(transactionToUpdateRow(tx))
+    .update(transactionToUpdateRow(merged))
     .eq('id', id);
 
   if (error) throw error;
@@ -157,8 +256,15 @@ export async function deleteTransaction(id: string): Promise<void> {
 export async function bulkCreate(items: Omit<Transaction, 'id'>[]): Promise<Transaction[]> {
   if (items.length === 0) return [];
 
+  const fx = await snapshotFxForPersist();
+  const withFx = items.map((tx) => ({
+    ...tx,
+    exchangeRateUsdToIls: fx.exchangeRateUsdToIls,
+    fxRateDate: fx.fxRateDate,
+  }));
+
   if (isDemoSessionActive()) {
-    const newRows: Transaction[] = items.map((tx) => ({ ...tx, id: newDemoId() }));
+    const newRows: Transaction[] = withFx.map((tx) => ({ ...tx, id: newDemoId() }));
     const next = sortTransactionsByDate([...newRows, ...readDemoTransactions()]);
     writeDemoTransactions(next);
     return newRows;
@@ -168,7 +274,7 @@ export async function bulkCreate(items: Omit<Transaction, 'id'>[]): Promise<Tran
   const familyId = await getProfileFamilyId();
   const { data, error } = await supabase
     .from('transactions')
-    .insert(items.map((tx) => transactionToInsertRow(tx, familyId)))
+    .insert(withFx.map((tx) => transactionToInsertRow(tx, familyId)))
     .select();
 
   if (error) throw error;

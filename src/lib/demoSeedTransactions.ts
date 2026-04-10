@@ -44,7 +44,6 @@ export function getDemoSeedTransactions(): Transaction[] {
       category: 'Business',
       type: TransactionType.INCOME,
       currency: 'USD',
-      isMaaserDeductible: true,
     },
     {
       id: 'demo-seed-5',
@@ -65,6 +64,7 @@ export function getDemoSeedTransactions(): Transaction[] {
       type: TransactionType.EXPENSE,
       currency: 'ILS',
       isRecurring: true,
+      recurringRemainingPayments: 3,
     },
     {
       id: 'demo-seed-7',

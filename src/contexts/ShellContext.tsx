@@ -24,7 +24,11 @@ interface ShellContextValue {
   setIsFormOpen: (open: boolean) => void;
   editingTransaction: Transaction | null;
   setEditingTransaction: (tx: Transaction | null) => void;
+  /** Prefill for Add Transaction (copy); mutually exclusive with `editingTransaction`. */
+  copyFromTransaction: Transaction | null;
+  setCopyFromTransaction: (tx: Transaction | null) => void;
   openEditForm: (id: string) => void;
+  openCopyForm: (id: string) => void;
 }
 
 const ShellContext = createContext<ShellContextValue | null>(null);
@@ -44,6 +48,7 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [exchangeRate, setExchangeRate] = useState<ExchangeRate | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [copyFromTransaction, setCopyFromTransaction] = useState<Transaction | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -74,7 +79,20 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     (id: string) => {
       const t = transactions.find((x) => x.id === id);
       if (t) {
+        setCopyFromTransaction(null);
         setEditingTransaction(t);
+        setIsFormOpen(true);
+      }
+    },
+    [transactions]
+  );
+
+  const openCopyForm = useCallback(
+    (id: string) => {
+      const t = transactions.find((x) => x.id === id);
+      if (t) {
+        setEditingTransaction(null);
+        setCopyFromTransaction(t);
         setIsFormOpen(true);
       }
     },
@@ -90,9 +108,20 @@ export const ShellProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsFormOpen,
       editingTransaction,
       setEditingTransaction,
+      copyFromTransaction,
+      setCopyFromTransaction,
       openEditForm,
+      openCopyForm,
     }),
-    [selectedYears, exchangeRate, isFormOpen, editingTransaction, openEditForm]
+    [
+      selectedYears,
+      exchangeRate,
+      isFormOpen,
+      editingTransaction,
+      copyFromTransaction,
+      openEditForm,
+      openCopyForm,
+    ]
   );
 
   return <ShellContext.Provider value={value}>{children}</ShellContext.Provider>;

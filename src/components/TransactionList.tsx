@@ -1,11 +1,12 @@
 import React from 'react';
 import { Transaction, TransactionType } from '../types';
-import { Trash2, ArrowUpRight, ArrowDownLeft, Receipt, HeartHandshake, Edit } from 'lucide-react';
+import { Trash2, ArrowUpRight, ArrowDownLeft, Receipt, HeartHandshake, Edit, Copy } from 'lucide-react';
 
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
   onEdit?: (id: string) => void;
+  onCopy?: (id: string) => void;
   /** When the parent narrowed the list with filters and nothing matches */
   emptyMessage?: { title: string; subtitle?: string };
 }
@@ -14,6 +15,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({
   transactions,
   onDelete,
   onEdit,
+  onCopy,
   emptyMessage,
 }) => {
   if (transactions.length === 0) {
@@ -107,6 +109,17 @@ export const TransactionList: React.FC<TransactionListProps> = ({
                 </td>
                 <td className="py-4 px-6 text-right">
                   <div className="flex items-center justify-end gap-2">
+                    {onCopy && (
+                      <button
+                        type="button"
+                        onClick={() => onCopy(t.id)}
+                        className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded"
+                        title="Copy as new transaction"
+                        aria-label="Copy as new transaction"
+                      >
+                        <Copy size={16} />
+                      </button>
+                    )}
                     {onEdit && (
                       <button
                         type="button"

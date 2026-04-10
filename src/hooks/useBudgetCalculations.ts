@@ -1,6 +1,7 @@
 import { useMemo, useCallback } from 'react';
 import { Transaction, TransactionType, Currency } from '../types';
-import { ExchangeRate, convertCurrency } from '../services/exchangeRateService';
+import { ExchangeRate } from '../services/exchangeRateService';
+import { sumTransactionsAsCurrency } from '../lib/transactionFx';
 
 export interface CurrencyBudgetSummary {
   income: number;
@@ -111,12 +112,11 @@ export function useBudgetCalculations(
     [dashboardTransactions]
   );
 
-  const convertCurrencyValue = useCallback(
-    (amount: number, from: Currency, to: Currency): number | null => {
-      if (!exchangeRate) return null;
-      return convertCurrency(amount, from, to, exchangeRate);
-    },
-    [exchangeRate]
+  /** Sum amounts in `targetCurrency` using per-row FX → same-month average → header rate (see `transactionFx.ts`). */
+  const sumAsCurrency = useCallback(
+    (txs: Transaction[], targetCurrency: Currency): number | null =>
+      sumTransactionsAsCurrency(txs, targetCurrency, yearFilteredTransactions, exchangeRate),
+    [yearFilteredTransactions, exchangeRate]
   );
 
   return {
@@ -127,6 +127,6 @@ export function useBudgetCalculations(
     usdSummary,
     getMonthlyData,
     getCategoryData,
-    convertCurrency: convertCurrencyValue,
+    sumTransactionsAsCurrency: sumAsCurrency,
   };
 }
