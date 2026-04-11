@@ -18,7 +18,7 @@ export const MaaserPage: React.FC = () => {
   const { applyListFilters, transactionListFilterProps } = useTransactionListFilterState(
     yearFilteredTransactions,
     selectedYears,
-    { includeTypeFilter: false, idPrefix: 'maaser-list-' }
+    { idPrefix: 'maaser-list-' }
   );
 
   const maaserOnly = useMemo(
