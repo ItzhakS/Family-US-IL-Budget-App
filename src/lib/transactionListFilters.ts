@@ -7,7 +7,7 @@ export interface TransactionListFilterCriteria {
   monthScope: TransactionListMonthScope;
   /** Case-insensitive match on description (P1.2) and category (P1.3). */
   search: string;
-  /** Omit or `'all'` to skip type filtering (e.g. Ma'aser lists). */
+  /** Omit or `'all'` to skip income/expense type filtering. */
   typeFilter?: 'all' | TransactionType;
   currencyFilter: 'all' | Currency;
 }

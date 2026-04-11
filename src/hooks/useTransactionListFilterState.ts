@@ -7,7 +7,7 @@ import {
 } from '../lib/transactionListFilters';
 
 export interface UseTransactionListFilterOptions {
-  /** When false, income/expense type is not filtered or shown (e.g. Ma'aser transaction lists). Default true. */
+  /** When false, income/expense type is not filtered or shown. Default true. */
   includeTypeFilter?: boolean;
   /** Prefix for input ids (a11y). E.g. `maaser-list-`. */
   idPrefix?: string;
