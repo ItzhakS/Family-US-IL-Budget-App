@@ -53,6 +53,9 @@ export const RecurringTemplatesProvider: React.FC<{ children: React.ReactNode }>
   /** Once-per-session bookkeeping for the auto-generation pass. */
   const generationRanRef = useRef(false);
   const migrationRanRef = useRef(false);
+  const txFetchStartedRef = useRef(false);
+  const [templatesReady, setTemplatesReady] = useState(false);
+  const [transactionsReady, setTransactionsReady] = useState(false);
 
   const refresh = useCallback(async () => {
     const demo = isDemoSessionActive() || isDemoMode;
@@ -72,8 +75,38 @@ export const RecurringTemplatesProvider: React.FC<{ children: React.ReactNode }>
       setTemplates([]);
     } finally {
       setLoading(false);
+      setTemplatesReady(true);
     }
   }, [user, isDemoMode]);
+
+  useEffect(() => {
+    // Reset one-shot guards when auth/demo context changes.
+    generationRanRef.current = false;
+    migrationRanRef.current = false;
+    txFetchStartedRef.current = false;
+    setTemplatesReady(false);
+    setTransactionsReady(false);
+  }, [user?.id, isDemoMode]);
+
+  useEffect(() => {
+    const demo = isDemoSessionActive() || isDemoMode;
+    if (!user && !demo) {
+      txFetchStartedRef.current = false;
+      setTransactionsReady(false);
+      return;
+    }
+
+    if (txLoading) {
+      txFetchStartedRef.current = true;
+      return;
+    }
+
+    // Consider transactions hydrated once we observed at least one loading cycle,
+    // or when there is data already available.
+    if (txFetchStartedRef.current || transactions.length > 0) {
+      setTransactionsReady(true);
+    }
+  }, [user, isDemoMode, txLoading, transactions.length]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -116,6 +149,7 @@ export const RecurringTemplatesProvider: React.FC<{ children: React.ReactNode }>
   useEffect(() => {
     if (authLoading || loading || txLoading) return;
     if (!user && !(isDemoSessionActive() || isDemoMode)) return;
+    if (!templatesReady || !transactionsReady) return;
     if (migrationRanRef.current) return;
 
     const seeds = buildLegacyTemplateSeeds(transactions);
@@ -150,7 +184,17 @@ export const RecurringTemplatesProvider: React.FC<{ children: React.ReactNode }>
     return () => {
       cancelled = true;
     };
-  }, [authLoading, loading, txLoading, user, isDemoMode, transactions, refreshTransactions]);
+  }, [
+    authLoading,
+    loading,
+    txLoading,
+    user,
+    isDemoMode,
+    templatesReady,
+    transactionsReady,
+    transactions,
+    refreshTransactions,
+  ]);
 
   /**
    * Auto-generate missing month transactions for every active template.
@@ -161,6 +205,7 @@ export const RecurringTemplatesProvider: React.FC<{ children: React.ReactNode }>
   useEffect(() => {
     if (authLoading || loading || txLoading) return;
     if (!user && !(isDemoSessionActive() || isDemoMode)) return;
+    if (!templatesReady || !transactionsReady) return;
     if (!migrationRanRef.current) return;
     if (generationRanRef.current) return;
     if (templates.length === 0) {
@@ -206,6 +251,8 @@ export const RecurringTemplatesProvider: React.FC<{ children: React.ReactNode }>
     txLoading,
     user,
     isDemoMode,
+    templatesReady,
+    transactionsReady,
     templates,
     transactions,
     refresh,
