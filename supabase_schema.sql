@@ -2,7 +2,8 @@
 create table profiles (
   id uuid references auth.users not null primary key,
   email text,
-  family_id uuid default gen_random_uuid()
+  family_id uuid default gen_random_uuid(),
+  dark_mode boolean not null default false
 );
 
 -- 2. Create the invite system table
@@ -86,6 +87,33 @@ alter table family_invites enable row level security;
 
 -- Policy: Users can only see their own profile
 create policy "View own profile" on profiles for select using (auth.uid() = id);
+
+-- Policy: Users can update their own profile preferences
+create policy "Update own profile preferences" on profiles for update
+to authenticated
+using ((select auth.uid()) = id)
+with check ((select auth.uid()) = id);
+
+create or replace function public.prevent_profile_identity_changes()
+returns trigger as $$
+begin
+  if current_role in ('anon', 'authenticated')
+    and (
+      new.id <> old.id
+      or new.family_id <> old.family_id
+      or new.email is distinct from old.email
+    )
+  then
+    raise exception 'Profile identity fields cannot be changed by client updates';
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_prevent_profile_identity_changes
+  before update on public.profiles
+  for each row execute procedure public.prevent_profile_identity_changes();
 
 -- Policy: Users can see transactions belonging to their family
 create policy "View family transactions" on transactions for select 

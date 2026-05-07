@@ -17,9 +17,9 @@ function templateStatus(t: RecurringTemplate): TemplateStatus {
 }
 
 const statusBadgeClass: Record<TemplateStatus, string> = {
-  active: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-  exhausted: 'bg-gray-200 text-gray-700',
+  active: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  cancelled: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  exhausted: 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
 };
 
 const statusLabel: Record<TemplateStatus, string> = {
@@ -37,23 +37,23 @@ export const RecurringPanel: React.FC<RecurringPanelProps> = ({ templates, onCan
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
       <div className="flex items-center gap-2 mb-2">
-        <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
+        <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg text-purple-600 dark:text-purple-300">
           <CalendarClock size={24} />
         </div>
-        <h2 className="text-xl font-bold text-gray-900">Recurring Templates</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">Recurring Templates</h2>
       </div>
-      <p className="text-sm text-gray-500 mb-6">
+      <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
         Each template auto-generates a new transaction on day{' '}
-        <span className="font-medium text-gray-700">N</span> of every month from its start month
+        <span className="font-medium text-gray-700 dark:text-gray-200">N</span> of every month from its start month
         through the current month. Generated rows are independent — editing one only changes that
         month.
       </p>
 
       <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
-          <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+          <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-700/80">
             <tr>
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Description</th>
@@ -65,38 +65,38 @@ export const RecurringPanel: React.FC<RecurringPanelProps> = ({ templates, onCan
               <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {sorted.map((t) => {
               const status = templateStatus(t);
               const symbol = t.currency === 'ILS' ? '₪' : '$';
               return (
-                <tr key={t.id} className="hover:bg-gray-50 align-top">
-                  <td className="px-4 py-3 text-xs font-semibold uppercase text-gray-500 whitespace-nowrap">
+                <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 align-top">
+                  <td className="px-4 py-3 text-xs font-semibold uppercase text-gray-500 dark:text-gray-400 whitespace-nowrap">
                     {t.type === TransactionType.INCOME ? 'Income' : 'Expense'}
                   </td>
-                  <td className="px-4 py-3 font-medium text-gray-900 min-w-0">
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-50 min-w-0">
                     <div className="flex items-start gap-2 min-w-0">
                       {status === 'active' ? (
                         <CheckCircle2 size={16} className="text-green-500 shrink-0 mt-0.5" aria-hidden />
                       ) : (
-                        <AlertCircle size={16} className="text-gray-400 shrink-0 mt-0.5" aria-hidden />
+                        <AlertCircle size={16} className="text-gray-400 dark:text-gray-500 shrink-0 mt-0.5" aria-hidden />
                       )}
                       <span className="min-w-0 break-words leading-snug">{t.description}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="px-2 py-1 rounded-full bg-gray-100 text-xs text-gray-600">
+                    <span className="px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-xs text-gray-600 dark:text-gray-300">
                       {t.category}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-600 tabular-nums">{t.dayOfMonth}</td>
-                  <td className="px-4 py-3 text-right font-medium tabular-nums whitespace-nowrap">
+                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300 tabular-nums">{t.dayOfMonth}</td>
+                  <td className="px-4 py-3 text-right font-medium text-gray-900 dark:text-gray-50 tabular-nums whitespace-nowrap">
                     {symbol}
                     {t.amount.toLocaleString()}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-600 tabular-nums">
+                  <td className="px-4 py-3 text-right text-gray-600 dark:text-gray-300 tabular-nums">
                     {t.remainingPayments == null ? (
-                      <span className="inline-flex items-center gap-1 text-gray-400">
+                      <span className="inline-flex items-center gap-1 text-gray-400 dark:text-gray-500">
                         <InfinityIcon size={14} aria-hidden />
                         <span className="sr-only">Unlimited</span>
                       </span>
@@ -117,7 +117,7 @@ export const RecurringPanel: React.FC<RecurringPanelProps> = ({ templates, onCan
                         <button
                           type="button"
                           onClick={() => void onCancel(t.id)}
-                          className="inline-flex items-center gap-1 rounded-lg border border-red-100 bg-red-50 px-2 py-1 text-xs font-medium text-red-800 hover:bg-red-100"
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-100 dark:border-red-900 bg-red-50 dark:bg-red-950/40 px-2 py-1 text-xs font-medium text-red-800 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/40"
                           title="Stop generating future transactions for this template"
                         >
                           <Ban size={14} aria-hidden />
@@ -133,7 +133,7 @@ export const RecurringPanel: React.FC<RecurringPanelProps> = ({ templates, onCan
         </table>
 
         {sorted.length === 0 && (
-          <div className="text-center py-8 text-gray-400">
+          <div className="text-center py-8 text-gray-400 dark:text-gray-500">
             <p>No recurring templates yet.</p>
             <p className="text-xs mt-1">
               Add a transaction and tick &ldquo;Monthly Recurring Bill&rdquo; to create a template

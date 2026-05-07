@@ -66,45 +66,45 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
     <div className="space-y-6">
       
       {/* Investments Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-6">
-          <div className="bg-blue-100 p-2 rounded-lg text-blue-600">
+          <div className="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg text-blue-600 dark:text-blue-300">
             <TrendingUp size={24} />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Investments</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">Investments</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
-            <p className="text-sm text-blue-600 font-medium mb-1">Total ILS Invested</p>
-            <p className="text-2xl font-bold text-gray-900">₪{invTotals.ils.toLocaleString()}</p>
+          <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg">
+            <p className="text-sm text-blue-600 dark:text-blue-300 font-medium mb-1">Total ILS Invested</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">₪{invTotals.ils.toLocaleString()}</p>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
-            <p className="text-sm text-green-600 font-medium mb-1">Total USD Invested</p>
-            <p className="text-2xl font-bold text-gray-900">${invTotals.usd.toLocaleString()}</p>
+          <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg">
+            <p className="text-sm text-green-600 dark:text-green-300 font-medium mb-1">Total USD Invested</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">${invTotals.usd.toLocaleString()}</p>
           </div>
         </div>
         {sumTransactionsAsCurrency && (
           <CombinedFxTotals txs={investments} sumAsCurrency={sumTransactionsAsCurrency} />
         )}
 
-        <h3 className="font-semibold text-gray-700 mb-3">Recent Deposits</h3>
+        <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-3">Recent Deposits</h3>
         <div className="space-y-2">
           {investments.slice(0, 5).map(t => (
-            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm group hover:bg-gray-100 transition-colors">
+            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
               <div className="flex flex-col flex-1">
-                 <span className="font-medium text-gray-900">{t.description}</span>
-                 <span className="text-xs text-gray-500">{t.date}</span>
+                 <span className="font-medium text-gray-900 dark:text-gray-50">{t.description}</span>
+                 <span className="text-xs text-gray-500 dark:text-gray-400">{t.date}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-bold text-blue-600">
+                <span className="font-bold text-blue-600 dark:text-blue-300">
                   {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
                 </span>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   {onEdit && (
                     <button
                       onClick={() => onEdit(t.id)}
-                      className="text-gray-400 hover:text-indigo-500 transition-colors"
+                      className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
                       title="Edit transaction"
                     >
                       <Edit size={16} />
@@ -113,7 +113,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                   {onDelete && (
                     <button
                       onClick={() => onDelete(t.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                       title="Delete transaction"
                     >
                       <Trash2 size={16} />
@@ -123,50 +123,50 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
               </div>
             </div>
           ))}
-          {investments.length === 0 && <p className="text-sm text-gray-400">No investment records yet.</p>}
+          {investments.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No investment records yet.</p>}
         </div>
       </div>
 
       {/* Tax Savings Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-6">
-          <div className="bg-purple-100 p-2 rounded-lg text-purple-600">
+          <div className="bg-purple-100 dark:bg-purple-900/30 p-2 rounded-lg text-purple-600 dark:text-purple-300">
             <TrendingUp size={24} />
           </div>
-          <h2 className="text-xl font-bold text-gray-900">Tax Savings</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">Tax Savings</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <p className="text-sm text-purple-600 font-medium mb-1">Total ILS Saved</p>
-            <p className="text-2xl font-bold text-gray-900">₪{taxSavingsTotals.ils.toLocaleString()}</p>
+          <div className="bg-purple-50 dark:bg-purple-950/30 p-4 rounded-lg">
+            <p className="text-sm text-purple-600 dark:text-purple-300 font-medium mb-1">Total ILS Saved</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">₪{taxSavingsTotals.ils.toLocaleString()}</p>
           </div>
-          <div className="bg-purple-50 p-4 rounded-lg">
-            <p className="text-sm text-purple-600 font-medium mb-1">Total USD Saved</p>
-            <p className="text-2xl font-bold text-gray-900">${taxSavingsTotals.usd.toLocaleString()}</p>
+          <div className="bg-purple-50 dark:bg-purple-950/30 p-4 rounded-lg">
+            <p className="text-sm text-purple-600 dark:text-purple-300 font-medium mb-1">Total USD Saved</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">${taxSavingsTotals.usd.toLocaleString()}</p>
           </div>
         </div>
         {sumTransactionsAsCurrency && (
           <CombinedFxTotals txs={taxSavings} sumAsCurrency={sumTransactionsAsCurrency} />
         )}
 
-        <h3 className="font-semibold text-gray-700 mb-3">Recent Deposits</h3>
+        <h3 className="font-semibold text-gray-700 dark:text-gray-200 mb-3">Recent Deposits</h3>
         <div className="space-y-2">
           {taxSavings.slice(0, 5).map(t => (
-            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg text-sm group hover:bg-gray-100 transition-colors">
+            <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-900 rounded-lg text-sm group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
               <div className="flex flex-col flex-1">
-                 <span className="font-medium text-gray-900">{t.description}</span>
-                 <span className="text-xs text-gray-500">{t.date}</span>
+                 <span className="font-medium text-gray-900 dark:text-gray-50">{t.description}</span>
+                 <span className="text-xs text-gray-500 dark:text-gray-400">{t.date}</span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-bold text-purple-600">
+                <span className="font-bold text-purple-600 dark:text-purple-300">
                   {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
                 </span>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   {onEdit && (
                     <button
                       onClick={() => onEdit(t.id)}
-                      className="text-gray-400 hover:text-indigo-500 transition-colors"
+                      className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
                       title="Edit transaction"
                     >
                       <Edit size={16} />
@@ -175,7 +175,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                   {onDelete && (
                     <button
                       onClick={() => onDelete(t.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
+                      className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
                       title="Delete transaction"
                     >
                       <Trash2 size={16} />
@@ -185,30 +185,30 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
               </div>
             </div>
           ))}
-          {taxSavings.length === 0 && <p className="text-sm text-gray-400">No tax savings records yet.</p>}
+          {taxSavings.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500">No tax savings records yet.</p>}
         </div>
       </div>
 
       {/* Tax Deductible Business Expenses Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
         <div className="flex items-center gap-2 mb-6">
-          <div className="bg-amber-100 p-2 rounded-lg text-amber-600">
+          <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-lg text-amber-600 dark:text-amber-300">
             <Briefcase size={24} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Business Expenses (Tax Claim)</h2>
-            <p className="text-xs text-gray-500">Expenses for tax filing only (Do not affect Ma'aser)</p>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-gray-50">Business Expenses (Tax Claim)</h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Expenses for tax filing only (Do not affect Ma'aser)</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 font-medium mb-1">Total ILS Expenses</p>
-            <p className="text-2xl font-bold text-gray-900">₪{taxTotals.ils.toLocaleString()}</p>
+          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-1">Total ILS Expenses</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">₪{taxTotals.ils.toLocaleString()}</p>
           </div>
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-sm text-gray-600 font-medium mb-1">Total USD Expenses</p>
-            <p className="text-2xl font-bold text-gray-900">${taxTotals.usd.toLocaleString()}</p>
+          <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+            <p className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-1">Total USD Expenses</p>
+            <p className="text-2xl font-bold text-gray-900 dark:text-gray-50">${taxTotals.usd.toLocaleString()}</p>
           </div>
         </div>
         {sumTransactionsAsCurrency && (
@@ -217,7 +217,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
-             <thead className="text-xs text-gray-500 uppercase bg-gray-50">
+             <thead className="text-xs text-gray-500 dark:text-gray-400 uppercase bg-gray-50 dark:bg-gray-700/80">
                 <tr>
                    <th className="px-4 py-2">Date</th>
                    <th className="px-4 py-2">Description</th>
@@ -227,10 +227,10 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
              </thead>
              <tbody>
                 {taxDeductibles.map(t => (
-                   <tr key={t.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors group">
-                      <td className="px-4 py-2 text-gray-500">{t.date}</td>
-                      <td className="px-4 py-2 font-medium text-gray-900">{t.description}</td>
-                      <td className="px-4 py-2 text-right">
+                   <tr key={t.id} className="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                      <td className="px-4 py-2 text-gray-500 dark:text-gray-400">{t.date}</td>
+                      <td className="px-4 py-2 font-medium text-gray-900 dark:text-gray-50">{t.description}</td>
+                      <td className="px-4 py-2 text-right text-gray-900 dark:text-gray-100">
                          {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
                       </td>
                       <td className="px-4 py-2 text-right">
@@ -238,7 +238,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                           {onEdit && (
                             <button
                               onClick={() => onEdit(t.id)}
-                              className="text-gray-400 hover:text-indigo-500 transition-colors opacity-0 group-hover:opacity-100"
+                              className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100"
                               title="Edit transaction"
                             >
                               <Edit size={16} />
@@ -247,7 +247,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                           {onDelete && (
                             <button
                               onClick={() => onDelete(t.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100"
+                              className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
                               title="Delete transaction"
                             >
                               <Trash2 size={16} />
@@ -259,7 +259,7 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                 ))}
              </tbody>
           </table>
-          {taxDeductibles.length === 0 && <p className="text-sm text-gray-400 p-4 text-center">No business expenses logged.</p>}
+          {taxDeductibles.length === 0 && <p className="text-sm text-gray-400 dark:text-gray-500 p-4 text-center">No business expenses logged.</p>}
         </div>
       </div>
     </div>

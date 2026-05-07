@@ -53,7 +53,7 @@ export const FamilyManager: React.FC = () => {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1 font-medium bg-indigo-50 px-2 py-1 rounded"
+        className="text-xs text-indigo-600 dark:text-indigo-300 hover:text-indigo-800 dark:hover:text-indigo-200 flex items-center gap-1 font-medium bg-indigo-50 dark:bg-indigo-950/40 px-2 py-1 rounded"
       >
         <UserPlus size={14} /> Invite Spouse
       </button>
@@ -61,28 +61,28 @@ export const FamilyManager: React.FC = () => {
   }
 
   return (
-    <div className="bg-white p-4 rounded-lg border border-indigo-100 shadow-sm mt-2">
-      <h4 className="text-sm font-bold text-gray-800 mb-2">Invite Family Member</h4>
+    <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-indigo-100 dark:border-indigo-900 shadow-sm mt-2">
+      <h4 className="text-sm font-bold text-gray-800 dark:text-gray-50 mb-2">Invite Family Member</h4>
       <form onSubmit={handleInvite} className="flex gap-2">
         <input
           type="email"
           placeholder="Spouse's Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="flex-1 px-3 py-1.5 text-sm border rounded focus:ring-1 focus:ring-indigo-500 outline-none"
+          className="flex-1 px-3 py-1.5 text-sm border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-indigo-500 outline-none"
           required
         />
         <button
           type="submit"
           disabled={loading}
-          className="bg-indigo-600 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700 disabled:opacity-50"
+          className="bg-indigo-600 dark:bg-indigo-500 text-white px-3 py-1.5 rounded text-sm hover:bg-indigo-700 dark:hover:bg-indigo-400 disabled:opacity-50"
         >
           {loading ? <Loader2 size={16} className="animate-spin" /> : 'Add'}
         </button>
       </form>
-      {message && <p className="text-xs text-green-600 mt-2 flex items-center gap-1"><Check size={12} /> {message}</p>}
-      {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
-      <button onClick={() => setIsOpen(false)} className="text-xs text-gray-400 mt-2 underline">Close</button>
+      {message && <p className="text-xs text-green-600 dark:text-green-400 mt-2 flex items-center gap-1"><Check size={12} /> {message}</p>}
+      {error && <p className="text-xs text-red-600 dark:text-red-400 mt-2">{error}</p>}
+      <button onClick={() => setIsOpen(false)} className="text-xs text-gray-400 dark:text-gray-500 mt-2 underline">Close</button>
     </div>
   );
 };

@@ -75,35 +75,35 @@ export const Login: React.FC<LoginProps> = ({ onTryDemo }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col items-center justify-center p-4">
       <div className="max-w-md w-full space-y-4">
         {onTryDemo && (
-          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 text-center shadow-sm">
-            <p className="text-xs font-semibold tracking-wide text-indigo-600 mb-2">DEMO MODE</p>
-            <h2 className="text-lg font-bold text-indigo-950">Explore without signing in</h2>
-            <p className="text-sm text-indigo-800 mt-2 mb-4">
+          <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900 rounded-2xl p-6 text-center shadow-sm">
+            <p className="text-xs font-semibold tracking-wide text-indigo-600 dark:text-indigo-300 mb-2">DEMO MODE</p>
+            <h2 className="text-lg font-bold text-indigo-950 dark:text-indigo-100">Explore without signing in</h2>
+            <p className="text-sm text-indigo-800 dark:text-indigo-300 mt-2 mb-4">
               Try the app instantly. Demo data stays on this device and is not synced.
             </p>
             <button
               type="button"
               onClick={onTryDemo}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl transition-all shadow-sm"
+              className="w-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-400 text-white font-medium py-3 rounded-xl transition-all shadow-sm"
             >
               Start Demo
             </button>
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
           <div className="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg transform -rotate-6">
             <Wallet className="text-white" size={32} />
           </div>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Smart Family Budget</h1>
-          <p className="text-gray-500 mb-8">Sign in to sync your budget across devices</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 mb-2">Smart Family Budget</h1>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">Sign in to sync your budget across devices</p>
 
           {message && (
-            <div className={`p-4 rounded-lg mb-6 text-sm text-left flex items-start gap-3 ${isError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+            <div className={`p-4 rounded-lg mb-6 text-sm text-left flex items-start gap-3 ${isError ? 'bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300' : 'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-300'}`}>
               {isError && <AlertCircle className="shrink-0 mt-0.5" size={16} />}
               <div>{message}</div>
             </div>
@@ -116,13 +116,13 @@ export const Login: React.FC<LoginProps> = ({ onTryDemo }) => {
                 placeholder="Enter your email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 outline-none"
                 required
               />
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                className="w-full bg-indigo-600 dark:bg-indigo-500 hover:bg-indigo-700 dark:hover:bg-indigo-400 text-white font-medium py-3 rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
               >
                 {loading ? <Loader2 className="animate-spin" size={20} /> : 'Send Magic Link'}
               </button>
@@ -131,16 +131,16 @@ export const Login: React.FC<LoginProps> = ({ onTryDemo }) => {
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
+              <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or continue with</span>
+              <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
             </div>
           </div>
           
           <button
             onClick={handleGoogleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium py-3 px-4 rounded-xl transition-all shadow-sm"
+            className="w-full flex items-center justify-center gap-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium py-3 px-4 rounded-xl transition-all shadow-sm"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

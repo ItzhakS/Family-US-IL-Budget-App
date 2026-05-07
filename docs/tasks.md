@@ -78,16 +78,13 @@
 
 ---
 
-## Phase 3 — Month rule + dark mode
+## Phase 3 — Dark mode
 
-- [ ] **P3.1** `[TAG:Month]` Add `family_month_state` table with month key per family. Schema + RLS only. — _Done when:_ Table exists, RLS enforced.
-- [ ] **P3.2** `[TAG:Month]` On first income/expense insert in a month, write `opened_at` + transaction id (idempotent, concurrent-safe). — _Done when:_ First insert creates record, duplicates ignored.
-- [ ] **P3.3** `[TAG:Month]` Show **non-blocking** banner when current month is "opened". — _Done when:_ Banner displays, does not block entry.
-- [ ] **P3.4** `[TAG:Dark]` Add dark theme CSS variables alongside light. — _Done when:_ Dark tokens defined.
-- [ ] **P3.5** `[TAG:Dark]` Add theme toggle UI, switch `light/dark` class, persist in `localStorage`. — _Done when:_ Toggle switches theme, persists on refresh.
-- [ ] **P3.6** `[TAG:Dark]` Audit **one chart** (dashboard primary) for dark readability. Fix contrast. — _Done when:_ Chart legible in dark mode.
-- [ ] **P3.7** `[TAG:Dark]` Audit remaining charts + components for dark mode. — _Done when:_ All UI legible in both modes.
-- [ ] **P3.8** `[TAG:Dark]` Sync dark mode preference to `profiles.dark_mode` for authenticated users. — _Done when:_ Preference persists across devices.
+- [x] ~~**P3.4** `[TAG:Dark]` Add dark theme CSS variables alongside light. — _Done when:_ Dark tokens defined.~~
+- [x] ~~**P3.5** `[TAG:Dark]` Add theme toggle UI, switch `light/dark` class, persist in `localStorage`. — _Done when:_ Toggle switches theme, persists on refresh.~~
+- [x] ~~**P3.6** `[TAG:Dark]` Audit **one chart** (dashboard primary) for dark readability. Fix contrast. — _Done when:_ Chart legible in dark mode.~~
+- [x] ~~**P3.7** `[TAG:Dark]` Audit remaining charts + components for dark mode. — _Done when:_ All UI legible in both modes.~~
+- [x] ~~**P3.8** `[TAG:Dark]` Sync dark mode preference to `profiles.dark_mode` for authenticated users. — _Done when:_ Preference persists across devices.~~
 
 ---
 

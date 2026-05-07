@@ -10,10 +10,10 @@ interface StatCardProps {
 
 export const StatCard: React.FC<StatCardProps> = ({ title, amount, icon, colorClass, currencySymbol }) => {
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-        <h3 className={`text-2xl font-bold ${amount < 0 ? 'text-red-500' : 'text-gray-900'}`}>
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">{title}</p>
+        <h3 className={`text-2xl font-bold ${amount < 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-900 dark:text-gray-50'}`}>
           {currencySymbol}{Math.abs(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </h3>
       </div>
