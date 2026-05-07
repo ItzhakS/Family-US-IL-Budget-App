@@ -71,6 +71,10 @@
 - [x] ~~**P2.5** `[TAG:Recurring]` Implement **decrement** of remaining count on explicit "record payment" event. — _Done when:_ Count decreases on payment.~~
 - [x] ~~**P2.6** `[TAG:Copy]` Add **Copy** action on transaction row → opens `TransactionForm` prefilled as new. — _Done when:_ Copy button visible, form opens prefilled.~~
 - [x] ~~**P2.7** `[TAG:Copy]` Prefill sets **date to today**, keeps other fields. — _Done when:_ Copied transaction has today's date.~~
+- [x] ~~**P2.8** `[TAG:Recurring]` Promote recurring to a first-class entity: `recurring_templates` table (family-scoped, RLS) + `transactions.recurring_template_id` FK. — _Done when:_ Migration applied, types/services updated, FK populated for new rows.~~
+- [x] ~~**P2.9** `[TAG:Recurring]` Auto-generate missing month transactions on app load from each active template's `start_month` through the current month (hard floor: never earlier than `start_month`). Idempotent via `last_generated_month` + per-month FK existence check. — _Done when:_ Reopening the app on a new month produces the row automatically; demo mode reproduces.~~
+- [x] ~~**P2.10** `[TAG:Recurring]` Client-side legacy migration: collapse pre-existing `isRecurring` rows into synthetic templates and link them via `recurring_template_id`. Idempotent — only operates on un-linked rows. — _Done when:_ Existing recurring rows show up in the new Recurring page and future months auto-generate.~~
+- [x] ~~**P2.11** `[TAG:Recurring]` Recurring page rewritten to show templates (active/cancelled/exhausted) with cancel action. Generated transactions are decoupled — editing one only affects that row. — _Done when:_ Page renders templates, cancel halts future generation.~~
 
 ---
 

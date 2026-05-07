@@ -54,6 +54,7 @@ export function getDemoSeedTransactions(): Transaction[] {
       type: TransactionType.EXPENSE,
       currency: 'ILS',
       isMaaserPayment: true,
+      isRecurring: true,
     },
     {
       id: 'demo-seed-6',

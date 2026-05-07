@@ -91,15 +91,22 @@ Auth guard: all AppShell routes require authentication or demo mode.
 - Migration: seed initial categories from current constants for existing families **or** lazy-migrate on first load (pick one strategy in tasks; prefer explicit migration for determinism).
 - UI: manage categories (rename, archive — **one behavior per task** in `tasks.md`).
 
-### E. Recurring controls (off + max X payments)
+### E. Recurring templates with auto-generation
 
-- Today: `isRecurring` boolean on `Transaction` / `is_recurring` column—no schedule or cap.
-- Target (minimal schema): extend transaction or add `recurring_meta`—example fields:
-  - `recurring_active` boolean (or reuse `is_recurring` with explicit semantics),
-  - `recurring_remaining_count` nullable int (null = unlimited),
-  - `recurring_cancelled_at` nullable timestamp (optional audit).
-- Product rule for “max payments”: define whether count means **months** or **duplicate rows** generated (today app does not auto-generate future rows; likely **semantic cap** for reporting + manual discipline, or **future** generator—**start with manual rows + visible remaining count** unless product mandates generation).
-- `RecurringPanel` should respect cancelled/capped state.
+- **Schema:** dedicated `recurring_templates` table (family-scoped, RLS) is the source of truth. `transactions.recurring_template_id` (nullable FK, ON DELETE SET NULL) links generated rows back to their template.
+- **Generation rule:** on app load, for every active template, fill every missing month from `start_month` (hard floor) through the current calendar month. Day of month capped at 28 to avoid Feb edge cases.
+- **Decoupling:** once a transaction is generated, it is fully independent. Editing/deleting a generated row does **not** affect the template; editing the template only affects future generations. The link via `recurring_template_id` exists for audit/skip-duplicate detection only.
+- **Cap semantics:** `remaining_payments` is decremented by the planner when it generates a month. `null` = unlimited. `0` = exhausted (no further generation).
+- **Idempotency:** the planner uses `last_generated_month` plus an existence check (`recurring_template_id` + month) to avoid duplicate rows on partial failures or concurrent clients.
+- **Legacy migration:** client-side, idempotent. Pre-existing `isRecurring` transactions with no template id are grouped by `(description, amount, category, currency, type, expense flags)` and rolled up into synthetic templates on first load. Original rows keep their dates and are linked via `recurring_template_id`.
+- **Code map:**
+  - `src/services/recurringTemplateService.ts` (CRUD + family scoping)
+  - `src/lib/recurringGeneration.ts` (pure planner)
+  - `src/lib/recurringMigration.ts` (legacy `isRecurring` → template seeds)
+  - `src/contexts/RecurringTemplatesContext.tsx` (loads, runs migration, runs generation, exposes CRUD)
+  - `src/pages/RecurringPage.tsx` + `src/components/RecurringPanel.tsx` (template-centric UI)
+  - `supabase/migrations/20260507230000_recurring_templates.sql`
+- `RecurringPanel` shows template state (active / cancelled / exhausted). Cancel sets `cancelled_at`; the planner skips cancelled templates.
 
 ### F. Copy transaction → form
 
@@ -124,7 +131,8 @@ Exact names belong in migrations; this is the intended shape:
 
 ```text
 categories (family-scoped)
-transactions (+ fx snapshot columns, + recurring cap fields)
+recurring_templates (family-scoped, source of truth for recurring)
+transactions (+ fx snapshot columns, + recurring cap fields, + recurring_template_id FK)
 family_month_state (optional but recommended for H)
 ```
 

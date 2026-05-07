@@ -1,15 +1,26 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Transaction, TransactionType, ReceiptData, Currency } from '../types';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../lib/constants';
-import { X, Loader2, Camera } from 'lucide-react';
+import { X, Loader2, Camera, RefreshCw } from 'lucide-react';
 import { parseReceiptImage } from '../services/geminiService';
 import { useCategories } from '../contexts/CategoriesContext';
+
+/** Extra options the form emits when the user opts into a recurring schedule. */
+export interface CreateRecurringTemplateInput {
+  dayOfMonth: number;
+  startMonth: string; // YYYY-MM
+  /** null = unlimited; numeric value is total payment cap including the row being created. */
+  totalPaymentsCap: number | null;
+}
 
 interface TransactionFormProps {
   transaction?: Transaction;
   /** Create new row prefilled from this transaction (date reset to today in form). */
   copyFrom?: Transaction;
-  onSave: (transaction: Omit<Transaction, 'id'>) => void;
+  onSave: (
+    transaction: Omit<Transaction, 'id'>,
+    opts?: { createRecurringTemplate?: CreateRecurringTemplateInput }
+  ) => void;
   onClose: () => void;
 }
 
@@ -131,9 +142,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   const [isScanning, setIsScanning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const isEditing = !!transaction;
+  const isLinkedToTemplate = !!transaction?.recurringTemplateId;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Map classification to boolean flags
     const isMaaserDeductible = type === TransactionType.EXPENSE && expenseClass === 'maaser_deductible';
     const isTaxDeductible = type === TransactionType.EXPENSE && expenseClass === 'tax_deductible';
@@ -142,16 +156,21 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     const isMaaserPayment = type === TransactionType.EXPENSE && expenseClass === 'maaser_payment';
     const effectiveRecurring = type === TransactionType.EXPENSE && isRecurring;
 
-    let recurringRemainingPayments: number | null = null;
+    let totalPaymentsCap: number | null = null;
     if (effectiveRecurring) {
       const trimmed = recurringMaxRemaining.trim();
       if (trimmed !== '') {
         const n = Number.parseInt(trimmed, 10);
-        recurringRemainingPayments = Number.isNaN(n) || n < 0 ? null : n;
+        totalPaymentsCap = Number.isNaN(n) || n < 0 ? null : n;
       }
     }
 
-    onSave({
+    // Recurring template creation only happens for brand-new EXPENSE rows when user ticks the box.
+    // When editing an existing row, the recurring controls are read-only/info-only and we don't
+    // mutate the template here (template management is on the Recurring page).
+    const shouldCreateTemplate = !isEditing && effectiveRecurring;
+
+    const payload: Omit<Transaction, 'id'> = {
       date,
       description,
       amount: parseFloat(amount),
@@ -165,8 +184,25 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       isTaxSavings,
       isMaaserPayment,
       recurringCancelledAt: effectiveRecurring ? (transaction?.recurringCancelledAt ?? null) : null,
-      recurringRemainingPayments: effectiveRecurring ? recurringRemainingPayments : null,
-    });
+      // The per-transaction remaining count is legacy; it now lives on the template.
+      // Keep null on new rows (template carries the cap) and preserve existing edits.
+      recurringRemainingPayments: isEditing ? (transaction?.recurringRemainingPayments ?? null) : null,
+    };
+
+    let opts: { createRecurringTemplate?: CreateRecurringTemplateInput } | undefined;
+    if (shouldCreateTemplate) {
+      const dayParsed = parseInt(date.split('-')[2] ?? '1', 10);
+      const dayOfMonth = Math.min(28, Math.max(1, Number.isNaN(dayParsed) ? 1 : dayParsed));
+      opts = {
+        createRecurringTemplate: {
+          dayOfMonth,
+          startMonth: date.slice(0, 7),
+          totalPaymentsCap,
+        },
+      };
+    }
+
+    onSave(payload, opts);
     onClose();
   };
 
@@ -447,34 +483,68 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
                    </div>
                 </div>
 
-                {/* Recurring checkbox - available for all expense types */}
-                <div className="flex items-center mt-3 bg-gray-50 p-3 rounded-lg">
-                  <input 
-                      type="checkbox" 
+                {isLinkedToTemplate ? (
+                  <div className="mt-3 bg-indigo-50 border border-indigo-100 rounded-lg p-3 flex items-start gap-2">
+                    <RefreshCw size={16} className="text-indigo-600 mt-0.5 shrink-0" aria-hidden />
+                    <div className="text-xs text-indigo-900">
+                      <p className="font-semibold">Generated from a recurring template.</p>
+                      <p className="mt-1 text-indigo-800">
+                        Edits here only change this single row. Manage the schedule (cancel, edit
+                        amount for future months) from the <span className="font-medium">Recurring</span> page.
+                      </p>
+                    </div>
+                  </div>
+                ) : isEditing ? (
+                  // Editing a legacy / non-template row: don't expose template controls; just preserve isRecurring flag.
+                  <div className="flex items-center mt-3 bg-gray-50 p-3 rounded-lg">
+                    <input
+                      type="checkbox"
                       id="isRecurring"
                       checked={isRecurring}
                       onChange={(e) => setIsRecurring(e.target.checked)}
                       className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                  />
-                  <label htmlFor="isRecurring" className="ml-2 text-sm text-gray-700">Monthly Recurring Bill</label>
-                </div>
-                {isRecurring && (
-                  <div className="mt-3">
-                    <label htmlFor="recurringMaxRemaining" className="block text-sm font-medium text-gray-700 mb-1">
-                      Max remaining payments
-                    </label>
-                    <input
-                      id="recurringMaxRemaining"
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={recurringMaxRemaining}
-                      onChange={(e) => setRecurringMaxRemaining(e.target.value)}
-                      placeholder="Unlimited if empty"
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Leave blank for no limit. Use the Recurring page to record each payment against this count.</p>
+                    <label htmlFor="isRecurring" className="ml-2 text-sm text-gray-700">
+                      Monthly Recurring Bill
+                    </label>
                   </div>
+                ) : (
+                  <>
+                    <div className="flex items-center mt-3 bg-gray-50 p-3 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="isRecurring"
+                        checked={isRecurring}
+                        onChange={(e) => setIsRecurring(e.target.checked)}
+                        className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                      />
+                      <label htmlFor="isRecurring" className="ml-2 text-sm text-gray-700">
+                        Monthly Recurring Bill
+                      </label>
+                    </div>
+                    {isRecurring && (
+                      <div className="mt-3 space-y-2">
+                        <label htmlFor="recurringMaxRemaining" className="block text-sm font-medium text-gray-700">
+                          Total payments
+                        </label>
+                        <input
+                          id="recurringMaxRemaining"
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={recurringMaxRemaining}
+                          onChange={(e) => setRecurringMaxRemaining(e.target.value)}
+                          placeholder="Unlimited if empty"
+                          className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
+                        />
+                        <p className="text-xs text-gray-500">
+                          Total includes this payment. Leave blank for no limit. A new transaction
+                          will auto-generate on day {parseInt(date.split('-')[2] ?? '1', 10)} of every
+                          month from {date.slice(0, 7)} onwards.
+                        </p>
+                      </div>
+                    )}
+                  </>
                 )}
              </div>
           )}

@@ -19,12 +19,16 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { TransactionsProvider, useTransactions } from '../contexts/TransactionsContext';
 import { CategoriesProvider } from '../contexts/CategoriesContext';
+import {
+  RecurringTemplatesProvider,
+  useRecurringTemplates,
+} from '../contexts/RecurringTemplatesContext';
 import { ShellProvider, useShell } from '../contexts/ShellContext';
 import { YearSelector } from '../components/YearSelector';
 import { FamilyManager } from '../components/FamilyManager';
-import { TransactionForm } from '../components/TransactionForm';
+import { TransactionForm, type CreateRecurringTemplateInput } from '../components/TransactionForm';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
-import type { Transaction } from '../types';
+import type { Transaction, TransactionType } from '../types';
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -40,7 +44,8 @@ const AppShellInner: React.FC = () => {
   const location = useLocation();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { user, isDemoMode, loading, enterDemo, logout } = useAuth();
-  const { transactions, loading: dataLoading, add, update } = useTransactions();
+  const { transactions, loading: dataLoading, add, update, refresh: refreshTransactions } = useTransactions();
+  const { create: createTemplate } = useRecurringTemplates();
   const {
     exchangeRate,
     selectedYears,
@@ -156,9 +161,44 @@ const AppShellInner: React.FC = () => {
     );
   }
 
-  const handleSaveTransaction = (tx: Omit<Transaction, 'id'>) => {
+  const handleSaveTransaction = (
+    tx: Omit<Transaction, 'id'>,
+    opts?: { createRecurringTemplate?: CreateRecurringTemplateInput }
+  ) => {
     if (editingTransaction) {
       void update(editingTransaction.id, tx);
+    } else if (opts?.createRecurringTemplate) {
+      // New transaction + new recurring template. The submitted row counts as the first
+      // generated payment, so we set lastGeneratedMonth = startMonth and decrement the cap by 1.
+      const cap = opts.createRecurringTemplate.totalPaymentsCap;
+      const remainingAfterFirst = cap == null ? null : Math.max(0, cap - 1);
+      void (async () => {
+        try {
+          const template = await createTemplate({
+            description: tx.description,
+            amount: tx.amount,
+            category: tx.category,
+            type: tx.type as TransactionType,
+            currency: tx.currency,
+            dayOfMonth: opts.createRecurringTemplate!.dayOfMonth,
+            startMonth: opts.createRecurringTemplate!.startMonth,
+            lastGeneratedMonth: opts.createRecurringTemplate!.startMonth,
+            remainingPayments: remainingAfterFirst,
+            isMaaserDeductible: !!tx.isMaaserDeductible,
+            isMaaserPayment: !!tx.isMaaserPayment,
+            isTaxDeductible: !!tx.isTaxDeductible,
+            isInvestment: !!tx.isInvestment,
+            isTaxSavings: !!tx.isTaxSavings,
+            cancelledAt: null,
+          });
+          await add({ ...tx, recurringTemplateId: template.id });
+          await refreshTransactions();
+        } catch (e) {
+          console.error('Failed to create recurring template:', e);
+          // Still create the transaction itself so the user does not lose their input.
+          void add(tx);
+        }
+      })();
     } else {
       void add(tx);
     }
@@ -373,9 +413,11 @@ export const AppShell: React.FC = () => {
   return (
     <CategoriesProvider>
       <TransactionsProvider>
-        <ShellProvider>
-          <AppShellInner />
-        </ShellProvider>
+        <RecurringTemplatesProvider>
+          <ShellProvider>
+            <AppShellInner />
+          </ShellProvider>
+        </RecurringTemplatesProvider>
       </TransactionsProvider>
     </CategoriesProvider>
   );

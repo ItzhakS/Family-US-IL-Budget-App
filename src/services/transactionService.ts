@@ -17,6 +17,7 @@ const ADDITIVE_TRANSACTION_COLUMNS = [
   'fx_rate_date',
   'recurring_cancelled_at',
   'recurring_remaining_payments',
+  'recurring_template_id',
 ] as const;
 
 function isMissingSchemaColumnError(error: unknown): boolean {
@@ -80,17 +81,26 @@ function mergeTxForUpdate(
   fx: { exchangeRateUsdToIls: number | null; fxRateDate: string | null } | null,
   refreshFx: boolean
 ): Omit<Transaction, 'id'> {
+  // Preserve recurring_template_id link unless the patch explicitly carries it.
+  // The form does not surface this field, so editing a generated row must not orphan it.
+  const preservedTemplateId =
+    patch.recurringTemplateId !== undefined
+      ? patch.recurringTemplateId
+      : (existing.recurringTemplateId ?? null);
+
   if (refreshFx) {
     return {
       ...patch,
       exchangeRateUsdToIls: fx?.exchangeRateUsdToIls ?? null,
       fxRateDate: fx?.fxRateDate ?? null,
+      recurringTemplateId: preservedTemplateId,
     };
   }
   return {
     ...patch,
     exchangeRateUsdToIls: existing.exchangeRateUsdToIls ?? null,
     fxRateDate: existing.fxRateDate ?? null,
+    recurringTemplateId: preservedTemplateId,
   };
 }
 
@@ -125,7 +135,14 @@ export function mapRowToTransaction(t: Record<string, unknown>): Transaction {
     isRecurring: Boolean(t.is_recurring),
     recurringCancelledAt: parseOptionalIso(t.recurring_cancelled_at),
     recurringRemainingPayments: parseOptionalInt(t.recurring_remaining_payments),
+    recurringTemplateId: parseOptionalString(t.recurring_template_id),
   };
+}
+
+function parseOptionalString(v: unknown): string | null {
+  if (v === null || v === undefined) return null;
+  const s = String(v).trim();
+  return s === '' ? null : s;
 }
 
 function parseOptionalIso(v: unknown): string | null {
@@ -160,6 +177,7 @@ function transactionToInsertRow(
     fx_rate_date: tx.fxRateDate ?? null,
     recurring_cancelled_at: tx.recurringCancelledAt ?? null,
     recurring_remaining_payments: tx.recurringRemainingPayments ?? null,
+    recurring_template_id: tx.recurringTemplateId ?? null,
     family_id: familyId,
   };
 }
@@ -182,6 +200,7 @@ function transactionToUpdateRow(tx: Omit<Transaction, 'id'>): Record<string, unk
     fx_rate_date: tx.fxRateDate ?? null,
     recurring_cancelled_at: tx.recurringCancelledAt ?? null,
     recurring_remaining_payments: tx.recurringRemainingPayments ?? null,
+    recurring_template_id: tx.recurringTemplateId ?? null,
   };
 }
 
@@ -311,6 +330,42 @@ export async function deleteTransaction(id: string): Promise<void> {
   if (!isSupabaseConfigured) throw new Error('Supabase not configured');
 
   const { error } = await supabase.from('transactions').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/**
+ * Link a set of existing transaction rows to a recurring template (legacy migration helper).
+ * Skips rows that are already linked to a different template.
+ */
+export async function linkToRecurringTemplate(
+  transactionIds: string[],
+  templateId: string
+): Promise<void> {
+  if (transactionIds.length === 0) return;
+
+  if (isDemoSessionActive()) {
+    const all = readDemoTransactions();
+    const idSet = new Set(transactionIds);
+    const next = all.map((t) => {
+      if (!idSet.has(t.id)) return t;
+      if (t.recurringTemplateId && t.recurringTemplateId !== templateId) return t;
+      return { ...t, recurringTemplateId: templateId };
+    });
+    writeDemoTransactions(next);
+    return;
+  }
+  if (!isSupabaseConfigured) throw new Error('Supabase not configured');
+
+  let { error } = await supabase
+    .from('transactions')
+    .update({ recurring_template_id: templateId })
+    .in('id', transactionIds)
+    .is('recurring_template_id', null);
+
+  if (isMissingSchemaColumnError(error)) {
+    console.warn('Skipping linkToRecurringTemplate: recurring_template_id column not present in cache.');
+    return;
+  }
   if (error) throw error;
 }
 

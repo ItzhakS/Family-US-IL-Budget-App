@@ -48,6 +48,45 @@ export interface Transaction {
   recurringCancelledAt?: string | null;
   /** Payments remaining for a finite subscription; null = unlimited. */
   recurringRemainingPayments?: number | null;
+  /** When set, this transaction was generated from a recurring template. Edits/deletes do not affect the template. */
+  recurringTemplateId?: string | null;
+}
+
+/**
+ * Source of truth for recurring bills/income. Auto-generates `Transaction` rows
+ * from `startMonth` through the current calendar month (never earlier).
+ * Once a transaction is generated, it is fully decoupled from the template.
+ */
+export interface RecurringTemplate {
+  id: string;
+  familyId: string;
+
+  description: string;
+  amount: number;
+  category: string;
+  type: TransactionType;
+  currency: Currency;
+  /** Day of month to generate (1-28; values >28 are capped to avoid Feb issues). */
+  dayOfMonth: number;
+
+  // Expense classification flags (mirror Transaction)
+  isMaaserDeductible: boolean;
+  isMaaserPayment: boolean;
+  isTaxDeductible: boolean;
+  isInvestment: boolean;
+  isTaxSavings: boolean;
+
+  /** YYYY-MM. Hard floor: generation never produces rows earlier than this month. */
+  startMonth: string;
+  /** null = unlimited; 0 = exhausted. Decremented each generation. */
+  remainingPayments: number | null;
+  /** YYYY-MM of the most recent month generated. null until first generation. */
+  lastGeneratedMonth: string | null;
+
+  /** When set, the template is cancelled and stops generating. */
+  cancelledAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface BudgetSummary {

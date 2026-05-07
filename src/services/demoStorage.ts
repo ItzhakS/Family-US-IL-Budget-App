@@ -1,10 +1,11 @@
-import { Category, Transaction, TransactionType } from '../types';
+import { Category, RecurringTemplate, Transaction, TransactionType } from '../types';
 import { buildDefaultCategorySeeds } from '../lib/categorySeed';
 
 export const DEMO_SESSION_KEY = 'family-budget-demo-session-v1';
 export const DEMO_TX_STORAGE_KEY = 'family-budget-demo-v1';
 /** Bump when default demo category presets change so new installs pick up updated seeds. */
 export const DEMO_CATEGORIES_KEY = 'family-budget-demo-categories-v2';
+export const DEMO_RECURRING_TEMPLATES_KEY = 'family-budget-demo-recurring-templates-v1';
 
 export function isDemoSessionActive(): boolean {
   if (typeof sessionStorage === 'undefined') return false;
@@ -55,6 +56,11 @@ function normalizeRawTransaction(raw: Record<string, unknown>): Transaction | nu
     const v = raw.recurringRemainingPayments;
     if (v === null) t.recurringRemainingPayments = null;
     else if (typeof v === 'number' && !Number.isNaN(v)) t.recurringRemainingPayments = v;
+  }
+  if ('recurringTemplateId' in raw) {
+    const v = raw.recurringTemplateId;
+    if (v === null) t.recurringTemplateId = null;
+    else if (typeof v === 'string' && v.trim() !== '') t.recurringTemplateId = v;
   }
 
   if ('exchangeRateUsdToIls' in raw) {
@@ -179,5 +185,91 @@ export function writeDemoCategories(categories: Category[]): void {
     localStorage.setItem(DEMO_CATEGORIES_KEY, JSON.stringify(categories));
   } catch (e) {
     console.error('Failed to persist demo categories', e);
+  }
+}
+
+function normalizeRecurringTemplate(raw: Record<string, unknown>): RecurringTemplate | null {
+  if (typeof raw.id !== 'string' || typeof raw.description !== 'string') return null;
+  if (typeof raw.amount !== 'number' || Number.isNaN(raw.amount)) return null;
+  if (typeof raw.category !== 'string') return null;
+  if (!isTransactionType(raw.type)) return null;
+  if (raw.currency !== 'ILS' && raw.currency !== 'USD') return null;
+  if (typeof raw.startMonth !== 'string' || !/^\d{4}-\d{2}$/.test(raw.startMonth)) return null;
+
+  const dayRaw = typeof raw.dayOfMonth === 'number' && !Number.isNaN(raw.dayOfMonth) ? raw.dayOfMonth : 1;
+  const dayOfMonth = Math.min(28, Math.max(1, Math.floor(dayRaw)));
+
+  const remaining =
+    raw.remainingPayments === null || raw.remainingPayments === undefined
+      ? null
+      : typeof raw.remainingPayments === 'number' && !Number.isNaN(raw.remainingPayments)
+        ? raw.remainingPayments
+        : null;
+
+  const lastGen =
+    raw.lastGeneratedMonth === null || raw.lastGeneratedMonth === undefined
+      ? null
+      : typeof raw.lastGeneratedMonth === 'string' && /^\d{4}-\d{2}$/.test(raw.lastGeneratedMonth)
+        ? raw.lastGeneratedMonth
+        : null;
+
+  const cancelled =
+    raw.cancelledAt === null || raw.cancelledAt === undefined
+      ? null
+      : typeof raw.cancelledAt === 'string' && raw.cancelledAt.trim() !== ''
+        ? raw.cancelledAt
+        : null;
+
+  return {
+    id: raw.id,
+    familyId: typeof raw.familyId === 'string' ? raw.familyId : 'demo',
+    description: raw.description,
+    amount: raw.amount,
+    category: raw.category,
+    type: raw.type,
+    currency: raw.currency,
+    dayOfMonth,
+    isMaaserDeductible: Boolean(raw.isMaaserDeductible),
+    isMaaserPayment: Boolean(raw.isMaaserPayment),
+    isTaxDeductible: Boolean(raw.isTaxDeductible),
+    isInvestment: Boolean(raw.isInvestment),
+    isTaxSavings: Boolean(raw.isTaxSavings),
+    startMonth: raw.startMonth,
+    remainingPayments: remaining,
+    lastGeneratedMonth: lastGen,
+    cancelledAt: cancelled,
+    createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : new Date(0).toISOString(),
+    updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : new Date(0).toISOString(),
+  };
+}
+
+export function readDemoRecurringTemplates(): RecurringTemplate[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(DEMO_RECURRING_TEMPLATES_KEY);
+    if (!raw) return [];
+
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+
+    const out: RecurringTemplate[] = [];
+    for (const item of parsed) {
+      if (item && typeof item === 'object') {
+        const t = normalizeRecurringTemplate(item as Record<string, unknown>);
+        if (t) out.push(t);
+      }
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+export function writeDemoRecurringTemplates(templates: RecurringTemplate[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(DEMO_RECURRING_TEMPLATES_KEY, JSON.stringify(templates));
+  } catch (e) {
+    console.error('Failed to persist demo recurring templates', e);
   }
 }
