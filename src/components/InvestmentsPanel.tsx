@@ -1,6 +1,6 @@
 import React from 'react';
 import { Transaction, TransactionType, Currency } from '../types';
-import { TrendingUp, Briefcase, Edit, Trash2 } from 'lucide-react';
+import { TrendingUp, Briefcase, Edit, Trash2, Copy } from 'lucide-react';
 
 function CombinedFxTotals({
   txs,
@@ -32,6 +32,7 @@ interface InvestmentsPanelProps {
   transactions: Transaction[];
   /** When set, shows combined cross-currency totals using per-transaction FX resolution. */
   sumTransactionsAsCurrency?: (txs: Transaction[], target: Currency) => number | null;
+  onCopy?: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
@@ -39,6 +40,7 @@ interface InvestmentsPanelProps {
 export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
   transactions,
   sumTransactionsAsCurrency,
+  onCopy,
   onEdit,
   onDelete,
 }) => {
@@ -101,6 +103,15 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                   {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
                 </span>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {onCopy && (
+                    <button
+                      onClick={() => onCopy(t.id)}
+                      className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                      title="Copy as new transaction"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  )}
                   {onEdit && (
                     <button
                       onClick={() => onEdit(t.id)}
@@ -163,6 +174,15 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                   {t.currency === 'ILS' ? '₪' : '$'}{t.amount.toLocaleString()}
                 </span>
                 <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {onCopy && (
+                    <button
+                      onClick={() => onCopy(t.id)}
+                      className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors"
+                      title="Copy as new transaction"
+                    >
+                      <Copy size={16} />
+                    </button>
+                  )}
                   {onEdit && (
                     <button
                       onClick={() => onEdit(t.id)}
@@ -235,6 +255,15 @@ export const InvestmentsPanel: React.FC<InvestmentsPanelProps> = ({
                       </td>
                       <td className="px-4 py-2 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {onCopy && (
+                            <button
+                              onClick={() => onCopy(t.id)}
+                              className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Copy as new transaction"
+                            >
+                              <Copy size={16} />
+                            </button>
+                          )}
                           {onEdit && (
                             <button
                               onClick={() => onEdit(t.id)}

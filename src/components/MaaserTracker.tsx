@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Transaction, TransactionType, Currency, MaaserMonthStats } from '../types';
-import { Heart, ChevronDown, ChevronUp, AlertCircle, Edit, Trash2 } from 'lucide-react';
+import { Heart, ChevronDown, ChevronUp, AlertCircle, Edit, Trash2, Copy } from 'lucide-react';
 
 /** Fund card + month-level breakdown (not affected by transaction-list filters). */
 export const MaaserSummaryPanel: React.FC<{
@@ -199,9 +199,10 @@ export const MaaserTransactionListPanel: React.FC<{
   transactions: Transaction[];
   /** Omit for a combined ILS+USD list (e.g. single mobile card). */
   currency?: Currency;
+  onCopy?: (id: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
-}> = ({ transactions, currency, onEdit, onDelete }) => {
+}> = ({ transactions, currency, onCopy, onEdit, onDelete }) => {
   const mixed = currency === undefined;
   const titleSuffix = mixed ? 'ILS & USD' : currency;
   const rows =
@@ -247,8 +248,18 @@ export const MaaserTransactionListPanel: React.FC<{
                       {t.amount.toLocaleString()}
                     </span>
                   </div>
-                  {(onEdit || onDelete) && (
+                  {(onCopy || onEdit || onDelete) && (
                     <div className="flex justify-end gap-2 pt-1">
+                      {onCopy && (
+                        <button
+                          type="button"
+                          onClick={() => onCopy(t.id)}
+                          className="text-gray-500 dark:text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                          aria-label="Copy as new transaction"
+                        >
+                          <Copy size={16} />
+                        </button>
+                      )}
                       {onEdit && (
                         <button
                           type="button"
@@ -333,6 +344,17 @@ export const MaaserTransactionListPanel: React.FC<{
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {onCopy && (
+                            <button
+                              type="button"
+                              onClick={() => onCopy(t.id)}
+                              className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 rounded"
+                              title="Copy as new transaction"
+                              aria-label="Copy as new transaction"
+                            >
+                              <Copy size={16} />
+                            </button>
+                          )}
                           {onEdit && (
                             <button
                               type="button"

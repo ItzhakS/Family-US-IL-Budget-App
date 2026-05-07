@@ -8,7 +8,7 @@ import { MaaserSummaryPanel, MaaserTransactionListPanel } from '../components/Ma
 
 export const MaaserPage: React.FC = () => {
   const { transactions, remove } = useTransactions();
-  const { selectedYears, exchangeRate, openEditForm } = useShell();
+  const { selectedYears, exchangeRate, openEditForm, openCopyForm } = useShell();
   const { yearFilteredTransactions } = useBudgetCalculations(
     transactions,
     selectedYears,
@@ -50,6 +50,7 @@ export const MaaserPage: React.FC = () => {
       <div className="lg:hidden">
         <MaaserTransactionListPanel
           transactions={filteredMaaser}
+          onCopy={openCopyForm}
           onEdit={openEditForm}
           onDelete={(id) => void remove(id)}
         />
@@ -59,12 +60,14 @@ export const MaaserPage: React.FC = () => {
         <MaaserTransactionListPanel
           transactions={filteredMaaser.filter((t) => t.currency === 'ILS')}
           currency="ILS"
+          onCopy={openCopyForm}
           onEdit={openEditForm}
           onDelete={(id) => void remove(id)}
         />
         <MaaserTransactionListPanel
           transactions={filteredMaaser.filter((t) => t.currency === 'USD')}
           currency="USD"
+          onCopy={openCopyForm}
           onEdit={openEditForm}
           onDelete={(id) => void remove(id)}
         />
