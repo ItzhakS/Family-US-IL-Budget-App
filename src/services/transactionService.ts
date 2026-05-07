@@ -11,6 +11,45 @@ import { getExchangeRate, getExchangeRateOffline } from './exchangeRateService';
 const sortTransactionsByDate = (txs: Transaction[]) =>
   [...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+const ADDITIVE_TRANSACTION_COLUMNS = [
+  'is_tax_savings',
+  'exchange_rate_usd_to_ils',
+  'fx_rate_date',
+  'recurring_cancelled_at',
+  'recurring_remaining_payments',
+] as const;
+
+function isMissingSchemaColumnError(error: unknown): boolean {
+  return Boolean(
+    error &&
+      typeof error === 'object' &&
+      'code' in error &&
+      (error as { code?: unknown }).code === 'PGRST204'
+  );
+}
+
+function omitNullishAdditiveColumns(row: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...row };
+  for (const column of ADDITIVE_TRANSACTION_COLUMNS) {
+    if (next[column] === null || next[column] === undefined) {
+      delete next[column];
+    }
+  }
+  return next;
+}
+
+function omitAdditiveColumns(row: Record<string, unknown>): Record<string, unknown> {
+  const next = { ...row };
+  for (const column of ADDITIVE_TRANSACTION_COLUMNS) {
+    delete next[column];
+  }
+  return next;
+}
+
+function prepareTransactionRow(row: Record<string, unknown>): Record<string, unknown> {
+  return omitNullishAdditiveColumns(row);
+}
+
 function newDemoId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
@@ -195,11 +234,23 @@ export async function create(tx: Omit<Transaction, 'id'>): Promise<Transaction> 
   if (!isSupabaseConfigured) throw new Error('Supabase not configured');
 
   const familyId = await getProfileFamilyId();
-  const { data, error } = await supabase
+  const row = transactionToInsertRow(withFx, familyId);
+  let { data, error } = await supabase
     .from('transactions')
-    .insert(transactionToInsertRow(withFx, familyId))
+    .insert(prepareTransactionRow(row))
     .select()
     .single();
+
+  if (isMissingSchemaColumnError(error)) {
+    console.warn('Retrying transaction insert without additive columns after schema-cache miss.');
+    const retry = await supabase
+      .from('transactions')
+      .insert(omitAdditiveColumns(row))
+      .select()
+      .single();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) throw error;
   return mapRowToTransaction(data as Record<string, unknown>);
@@ -234,10 +285,20 @@ export async function update(id: string, tx: Omit<Transaction, 'id'>): Promise<v
   const fx = refreshFx ? await snapshotFxForPersist() : null;
   const merged = mergeTxForUpdate(existing, tx, fx, refreshFx);
 
-  const { error } = await supabase
+  const row = transactionToUpdateRow(merged);
+  let { error } = await supabase
     .from('transactions')
-    .update(transactionToUpdateRow(merged))
+    .update(prepareTransactionRow(row))
     .eq('id', id);
+
+  if (isMissingSchemaColumnError(error)) {
+    console.warn('Retrying transaction update without additive columns after schema-cache miss.');
+    const retry = await supabase
+      .from('transactions')
+      .update(omitAdditiveColumns(row))
+      .eq('id', id);
+    error = retry.error;
+  }
 
   if (error) throw error;
 }
@@ -272,10 +333,21 @@ export async function bulkCreate(items: Omit<Transaction, 'id'>[]): Promise<Tran
   if (!isSupabaseConfigured) throw new Error('Supabase not configured');
 
   const familyId = await getProfileFamilyId();
-  const { data, error } = await supabase
+  const rows = withFx.map((tx) => transactionToInsertRow(tx, familyId));
+  let { data, error } = await supabase
     .from('transactions')
-    .insert(withFx.map((tx) => transactionToInsertRow(tx, familyId)))
+    .insert(rows.map(prepareTransactionRow))
     .select();
+
+  if (isMissingSchemaColumnError(error)) {
+    console.warn('Retrying bulk transaction insert without additive columns after schema-cache miss.');
+    const retry = await supabase
+      .from('transactions')
+      .insert(rows.map(omitAdditiveColumns))
+      .select();
+    data = retry.data;
+    error = retry.error;
+  }
 
   if (error) throw error;
   return (data || []).map((t) => mapRowToTransaction(t as Record<string, unknown>));

@@ -9,6 +9,20 @@ export interface ExchangeRate {
   date: string; // YYYY-MM-DD
 }
 
+type ExchangeRateRow = {
+  date: string;
+  usd_to_ils: number;
+  ils_to_usd: number;
+};
+
+function mapExchangeRateRow(row: ExchangeRateRow): ExchangeRate {
+  return {
+    usdToIls: Number(row.usd_to_ils),
+    ilsToUsd: Number(row.ils_to_usd),
+    date: row.date,
+  };
+}
+
 /**
  * Fetches the current USD/ILS exchange rate from Open Exchange Rates API
  */
@@ -93,49 +107,51 @@ export async function getExchangeRate(): Promise<ExchangeRate | null> {
       .from('exchange_rates')
       .select('*')
       .eq('date', today)
-      .single();
+      .maybeSingle();
 
-    if (existingRate && !fetchError) {
+    if (fetchError) {
+      console.error('Error reading cached exchange rate:', fetchError);
+    }
+
+    if (existingRate) {
       // Return cached rate
-      return {
-        usdToIls: existingRate.usd_to_ils,
-        ilsToUsd: existingRate.ils_to_usd,
-        date: existingRate.date,
-      };
+      return mapExchangeRateRow(existingRate as ExchangeRateRow);
     }
 
     // No rate for today, fetch from API
     const rate = await fetchExchangeRateFromAPI();
 
-    // Store in database (global, shared by all families)
-    const { error: insertError } = await supabase
+    // Store in database (global, shared by all families). The date unique key makes this
+    // safe when multiple clients fetch the first rate of the day at the same time.
+    const { error: upsertError } = await supabase
       .from('exchange_rates')
-      .insert({
+      .upsert({
         date: rate.date,
         usd_to_ils: rate.usdToIls,
         ils_to_usd: rate.ilsToUsd,
+      }, {
+        onConflict: 'date',
+        ignoreDuplicates: true,
       });
 
-    if (insertError) {
-      // If insert fails (e.g., race condition where another user just inserted it),
-      // try to fetch it again
-      if (insertError.code === '23505') { // Unique violation
-        const { data: retryRate } = await supabase
-          .from('exchange_rates')
-          .select('*')
-          .eq('date', today)
-          .single();
-        
-        if (retryRate) {
-          return {
-            usdToIls: retryRate.usd_to_ils,
-            ilsToUsd: retryRate.ils_to_usd,
-            date: retryRate.date,
-          };
-        }
-      }
-      console.error('Error storing exchange rate:', insertError);
+    if (upsertError) {
+      console.error('Error storing exchange rate:', upsertError);
       // Still return the rate even if storage fails
+      return rate;
+    }
+
+    const { data: savedRate, error: savedError } = await supabase
+      .from('exchange_rates')
+      .select('*')
+      .eq('date', today)
+      .maybeSingle();
+
+    if (savedError) {
+      console.error('Error reading saved exchange rate:', savedError);
+    }
+
+    if (savedRate) {
+      return mapExchangeRateRow(savedRate as ExchangeRateRow);
     }
 
     return rate;
@@ -148,14 +164,10 @@ export async function getExchangeRate(): Promise<ExchangeRate | null> {
       .select('*')
       .order('date', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (fallbackRate) {
-      return {
-        usdToIls: fallbackRate.usd_to_ils,
-        ilsToUsd: fallbackRate.ils_to_usd,
-        date: fallbackRate.date,
-      };
+      return mapExchangeRateRow(fallbackRate as ExchangeRateRow);
     }
 
     return null;
