@@ -41,6 +41,7 @@ function normalizeRawTransaction(raw: Record<string, unknown>): Transaction | nu
     currency: raw.currency,
     isMaaserDeductible: Boolean(raw.isMaaserDeductible),
     isMaaserPayment: Boolean(raw.isMaaserPayment),
+    isNonMaaserIncome: Boolean(raw.isNonMaaserIncome),
     isTaxDeductible: Boolean(raw.isTaxDeductible),
     isInvestment: Boolean(raw.isInvestment),
     isTaxSavings: Boolean(raw.isTaxSavings),

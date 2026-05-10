@@ -31,6 +31,7 @@ create table transactions (
   is_tax_deductible boolean default false,
   is_investment boolean default false,
   is_tax_savings boolean default false,
+  is_non_maaser_income boolean not null default false,
   exchange_rate_usd_to_ils numeric,
   fx_rate_date date,
   recurring_cancelled_at timestamp with time zone,

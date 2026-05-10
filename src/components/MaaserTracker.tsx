@@ -32,7 +32,9 @@ export const MaaserSummaryPanel: React.FC<{
       const monthTx = grouped[month];
 
       const income = monthTx
-        .filter((t) => t.type === TransactionType.INCOME)
+        .filter(
+          (t) => t.type === TransactionType.INCOME && !t.isNonMaaserIncome
+        )
         .reduce((sum, t) => sum + t.amount, 0);
 
       const deductibleTx = monthTx.filter((t) => t.type === TransactionType.EXPENSE && t.isMaaserDeductible);

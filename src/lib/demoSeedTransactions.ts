@@ -46,6 +46,16 @@ export function getDemoSeedTransactions(): Transaction[] {
       currency: 'USD',
     },
     {
+      id: 'demo-seed-4b',
+      date: m(1, 22),
+      description: 'Personal loan (not Maaser income)',
+      amount: 10000,
+      category: 'Other',
+      type: TransactionType.INCOME,
+      currency: 'ILS',
+      isNonMaaserIncome: true,
+    },
+    {
       id: 'demo-seed-5',
       date: m(1, 20),
       description: 'Charity donation',

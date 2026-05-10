@@ -40,6 +40,8 @@ export interface Transaction {
   // Specific Flags
   isMaaserDeductible?: boolean; // Business exp that reduces Ma'aser obligation (Show in Maaser tab only)
   isMaaserPayment?: boolean;    // Payment to charity (Show in Maaser tab)
+  /** When true, INCOME does not count toward Ma'aser obligation (loan, reimbursement). Default: counts for Ma'aser. */
+  isNonMaaserIncome?: boolean;
   isTaxDeductible?: boolean;    // Business exp for Tax filing (Show in Inv/Tax tab only)
   isInvestment?: boolean;       // Investment deposits (Show in Inv/Tax tab)
   isTaxSavings?: boolean;       // Tax savings deposits (Show in Inv/Tax tab)

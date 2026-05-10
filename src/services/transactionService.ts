@@ -13,6 +13,7 @@ const sortTransactionsByDate = (txs: Transaction[]) =>
 
 const ADDITIVE_TRANSACTION_COLUMNS = [
   'is_tax_savings',
+  'is_non_maaser_income',
   'exchange_rate_usd_to_ils',
   'fx_rate_date',
   'recurring_cancelled_at',
@@ -129,6 +130,7 @@ export function mapRowToTransaction(t: Record<string, unknown>): Transaction {
         : null,
     isMaaserDeductible: Boolean(t.is_maaser_deductible),
     isMaaserPayment: Boolean(t.is_maaser_payment),
+    isNonMaaserIncome: Boolean(t.is_non_maaser_income),
     isTaxDeductible: Boolean(t.is_tax_deductible),
     isInvestment: Boolean(t.is_investment),
     isTaxSavings: Boolean(t.is_tax_savings),
@@ -170,6 +172,7 @@ function transactionToInsertRow(
     is_recurring: tx.isRecurring ?? false,
     is_maaser_deductible: tx.isMaaserDeductible ?? false,
     is_maaser_payment: tx.isMaaserPayment ?? false,
+    is_non_maaser_income: tx.isNonMaaserIncome ?? false,
     is_tax_deductible: tx.isTaxDeductible ?? false,
     is_investment: tx.isInvestment ?? false,
     is_tax_savings: tx.isTaxSavings ?? false,
@@ -193,6 +196,7 @@ function transactionToUpdateRow(tx: Omit<Transaction, 'id'>): Record<string, unk
     is_recurring: tx.isRecurring ?? false,
     is_maaser_deductible: tx.isMaaserDeductible ?? false,
     is_maaser_payment: tx.isMaaserPayment ?? false,
+    is_non_maaser_income: tx.isNonMaaserIncome ?? false,
     is_tax_deductible: tx.isTaxDeductible ?? false,
     is_investment: tx.isInvestment ?? false,
     is_tax_savings: tx.isTaxSavings ?? false,

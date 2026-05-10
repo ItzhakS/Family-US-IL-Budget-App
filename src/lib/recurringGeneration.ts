@@ -90,6 +90,7 @@ export function planTemplateGeneration(
       isRecurring: template.type === TransactionType.EXPENSE,
       isMaaserDeductible: template.isMaaserDeductible,
       isMaaserPayment: template.isMaaserPayment,
+      isNonMaaserIncome: false,
       isTaxDeductible: template.isTaxDeductible,
       isInvestment: template.isInvestment,
       isTaxSavings: template.isTaxSavings,

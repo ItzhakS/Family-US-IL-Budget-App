@@ -70,6 +70,10 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     return 'household';
   };
   const [expenseClass, setExpenseClass] = useState<'household' | 'maaser_deductible' | 'tax_deductible' | 'investment' | 'tax_savings' | 'maaser_payment'>(getExpenseClass(transaction));
+  /** Income is Ma'aser-able by default; when true, exclude this income from Ma'aser obligation. */
+  const [excludeFromMaaserIncome, setExcludeFromMaaserIncome] = useState(
+    () => !!(transaction?.isNonMaaserIncome || copyFrom?.isNonMaaserIncome)
+  );
 
   // Update form when transaction / copy source changes
   useEffect(() => {
@@ -93,6 +97,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       else if (transaction.isInvestment) newExpenseClass = 'investment';
       else if (transaction.isTaxSavings) newExpenseClass = 'tax_savings';
       setExpenseClass(newExpenseClass);
+      setExcludeFromMaaserIncome(!!transaction.isNonMaaserIncome);
     } else if (copyFrom) {
       setType(copyFrom.type);
       setCurrency(copyFrom.currency);
@@ -113,6 +118,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       else if (copyFrom.isInvestment) newExpenseClass = 'investment';
       else if (copyFrom.isTaxSavings) newExpenseClass = 'tax_savings';
       setExpenseClass(newExpenseClass);
+      setExcludeFromMaaserIncome(!!copyFrom.isNonMaaserIncome);
     } else {
       setType(TransactionType.EXPENSE);
       setCurrency('ILS');
@@ -123,6 +129,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       setIsRecurring(false);
       setRecurringMaxRemaining('');
       setExpenseClass('household');
+      setExcludeFromMaaserIncome(false);
     }
   }, [transaction, copyFrom]);
 
@@ -154,6 +161,8 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
     const isInvestment = type === TransactionType.EXPENSE && expenseClass === 'investment';
     const isTaxSavings = type === TransactionType.EXPENSE && expenseClass === 'tax_savings';
     const isMaaserPayment = type === TransactionType.EXPENSE && expenseClass === 'maaser_payment';
+    const isNonMaaserIncome =
+      type === TransactionType.INCOME && excludeFromMaaserIncome;
     const effectiveRecurring = type === TransactionType.EXPENSE && isRecurring;
 
     let totalPaymentsCap: number | null = null;
@@ -183,6 +192,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       isInvestment,
       isTaxSavings,
       isMaaserPayment,
+      isNonMaaserIncome,
       recurringCancelledAt: effectiveRecurring ? (transaction?.recurringCancelledAt ?? null) : null,
       // The per-transaction remaining count is legacy; it now lives on the template.
       // Keep null on new rows (template carries the cap) and preserve existing edits.
@@ -304,6 +314,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${type === TransactionType.EXPENSE ? 'bg-white dark:bg-gray-700 text-red-600 dark:text-red-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
               onClick={() => {
                 setType(TransactionType.EXPENSE);
+                setExcludeFromMaaserIncome(false);
                 setCategory(expenseOptions[0] ?? EXPENSE_CATEGORIES[0]);
               }}
             >
@@ -314,6 +325,12 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${type === TransactionType.INCOME ? 'bg-white dark:bg-gray-700 text-green-600 dark:text-green-300 shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
               onClick={() => {
                 setType(TransactionType.INCOME);
+                const src = transaction ?? copyFrom;
+                if (src?.type === TransactionType.INCOME) {
+                  setExcludeFromMaaserIncome(!!src.isNonMaaserIncome);
+                } else {
+                  setExcludeFromMaaserIncome(false);
+                }
                 setCategory(incomeOptions[0] ?? INCOME_CATEGORIES[0]);
               }}
             >
@@ -404,6 +421,21 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
               />
             </div>
           </div>
+
+          {type === TransactionType.INCOME && (
+            <div className="flex items-start gap-3 rounded-lg border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/60 p-3">
+              <input
+                type="checkbox"
+                id="exclude-maaser-income"
+                checked={excludeFromMaaserIncome}
+                onChange={(e) => setExcludeFromMaaserIncome(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-900 dark:focus:ring-offset-gray-800"
+              />
+              <label htmlFor="exclude-maaser-income" className="text-sm text-gray-700 dark:text-gray-300 leading-snug">
+                Exclude from Ma&apos;aser obligation <span className="text-gray-500 dark:text-gray-400">(loan, reimbursement, etc.)</span>
+              </label>
+            </div>
+          )}
 
           {/* Expense Classification */}
           {type === TransactionType.EXPENSE && (
