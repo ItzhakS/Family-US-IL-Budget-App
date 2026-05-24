@@ -7,10 +7,11 @@ import { TransactionList } from '../components/TransactionList';
 import { TransactionListFilters } from '../components/TransactionListFilters';
 import { AnalysisPanel } from '../components/AnalysisPanel';
 import { DashboardMonthTable } from '../components/DashboardMonthTable';
+import { DashboardSkeleton } from '../components/Skeleton';
 import { useTheme } from '../contexts/ThemeContext';
 
 export const DashboardPage: React.FC = () => {
-  const { transactions, remove } = useTransactions();
+  const { transactions, loading, remove } = useTransactions();
   const { selectedYears, exchangeRate, openEditForm, openCopyForm } = useShell();
   const { isDark } = useTheme();
   const {
@@ -23,6 +24,10 @@ export const DashboardPage: React.FC = () => {
 
   const { listDisplayTransactions, listEmptyMessage, transactionListFilterProps } =
     useTransactionListFilterState(yearFilteredTransactions, selectedYears);
+
+  if (loading && transactions.length === 0) {
+    return <DashboardSkeleton />;
+  }
 
   const ils = '₪';
   const chartTheme = {

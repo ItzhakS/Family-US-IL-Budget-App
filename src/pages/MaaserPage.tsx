@@ -5,9 +5,10 @@ import { useBudgetCalculations } from '../hooks/useBudgetCalculations';
 import { useTransactionListFilterState } from '../hooks/useTransactionListFilterState';
 import { TransactionListFilters } from '../components/TransactionListFilters';
 import { MaaserSummaryPanel, MaaserTransactionListPanel } from '../components/MaaserTracker';
+import { MaaserSkeleton } from '../components/Skeleton';
 
 export const MaaserPage: React.FC = () => {
-  const { transactions, remove } = useTransactions();
+  const { transactions, loading, remove } = useTransactions();
   const { selectedYears, exchangeRate, openEditForm, openCopyForm } = useShell();
   const { yearFilteredTransactions } = useBudgetCalculations(
     transactions,
@@ -31,6 +32,10 @@ export const MaaserPage: React.FC = () => {
     () => applyListFilters(maaserOnly),
     [applyListFilters, maaserOnly]
   );
+
+  if (loading && transactions.length === 0) {
+    return <MaaserSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

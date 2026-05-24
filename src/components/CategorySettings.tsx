@@ -5,6 +5,8 @@ import { useCategories } from '../contexts/CategoriesContext';
 import * as categoryService from '../services/categoryService';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { useConfirmDialog } from '../contexts/ConfirmDialogContext';
 
 function KindSection({
   kind,
@@ -16,6 +18,8 @@ function KindSection({
   hint: string;
 }) {
   const { categories, loading, refresh } = useCategories();
+  const { addToast } = useToast();
+  const { confirm } = useConfirmDialog();
   const [newName, setNewName] = useState('');
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -42,8 +46,9 @@ function KindSection({
       await categoryService.renameCategory(editingId, editDraft);
       await refresh();
       cancelEdit();
+      addToast('Category renamed', 'success');
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not rename category');
+      addToast(e instanceof Error ? e.message : 'Could not rename category', 'error');
     } finally {
       setSaving(false);
     }
@@ -55,24 +60,30 @@ function KindSection({
       await categoryService.createCategory(newName, kind);
       setNewName('');
       await refresh();
+      addToast('Category added', 'success');
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not add category');
+      addToast(e instanceof Error ? e.message : 'Could not add category', 'error');
     } finally {
       setSaving(false);
     }
   };
 
   const remove = async (id: string, name: string) => {
-    const ok = window.confirm(
-      `Delete "${name}"? Past transactions that used this label will still show it until you edit them.`
-    );
+    const ok = await confirm({
+      title: 'Delete category?',
+      message: `Delete "${name}"? Past transactions that used this label will still show it until you edit them.`,
+      confirmLabel: 'Delete',
+      cancelLabel: 'Cancel',
+      variant: 'danger',
+    });
     if (!ok) return;
     setSaving(true);
     try {
       await categoryService.deleteCategory(id);
       await refresh();
+      addToast('Category deleted', 'success');
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Could not delete category');
+      addToast(e instanceof Error ? e.message : 'Could not delete category', 'error');
     } finally {
       setSaving(false);
     }

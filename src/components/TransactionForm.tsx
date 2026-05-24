@@ -4,6 +4,7 @@ import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../lib/constants';
 import { X, Loader2, Camera, RefreshCw } from 'lucide-react';
 import { parseReceiptImage } from '../services/geminiService';
 import { useCategories } from '../contexts/CategoriesContext';
+import { useToast } from '../contexts/ToastContext';
 
 /** Extra options the form emits when the user opts into a recurring schedule. */
 export interface CreateRecurringTemplateInput {
@@ -31,6 +32,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
   onClose,
 }) => {
   const { categories } = useCategories();
+  const { addToast } = useToast();
 
   const expenseOptions = useMemo(() => {
     const fromDb = categories
@@ -240,7 +242,7 @@ export const TransactionForm: React.FC<TransactionFormProps> = ({
       };
       reader.readAsDataURL(file);
     } catch (error) {
-      alert("Failed to scan receipt. Please enter details manually.");
+      addToast('Failed to scan receipt. Please enter details manually.', 'error');
     } finally {
       setIsScanning(false);
     }

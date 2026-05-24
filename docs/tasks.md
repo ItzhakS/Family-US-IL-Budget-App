@@ -90,18 +90,18 @@
 
 ## Phase 4 — Polish + quality
 
-- [ ] **P4.1** `[TAG:Toast]` Create `Toast.tsx` component: success/error/warning/info variants, auto-dismiss 4s, stacking. — _Done when:_ Toast renders, auto-dismisses.
-- [ ] **P4.2** `[TAG:Toast]` Create `ConfirmDialog.tsx` component: modal with Cancel (default focus) + Confirm. — _Done when:_ Dialog renders with proper focus.
-- [ ] **P4.3** `[TAG:Toast]` Replace all `alert()` calls with Toast. — _Done when:_ Zero `alert()` in codebase.
-- [ ] **P4.4** `[TAG:Toast]` Replace all `window.confirm()` calls with ConfirmDialog. — _Done when:_ Zero `confirm()` in codebase.
-- [ ] **P4.5** `[TAG:Error]` Add React Error Boundary wrapping route pages. Show "Something went wrong" + retry. — _Done when:_ Thrown error shows boundary UI.
-- [ ] **P4.6** `[TAG:Loading]` Create `Skeleton.tsx` with shimmer animation. — _Done when:_ Skeleton component exists.
-- [ ] **P4.7** `[TAG:Loading]` Add skeleton states to Dashboard, Ma'aser, Recurring pages during data fetch. — _Done when:_ Skeletons shown while loading.
-- [ ] **P4.8** `[TAG:Demo]` Extend `demoStorage.ts` for `categories`, `recurring_templates`. — _Done when:_ Demo mode supports new models.
-- [ ] **P4.9** `[TAG:Demo]` Seed demo mode with sample recurring templates + custom categories. — _Done when:_ Demo shows realistic data.
-- [ ] **P4.10** `[TAG:Test]` Set up Vitest + React Testing Library. Create sample passing test. — _Done when:_ `npm test` passes.
-- [ ] **P4.11** `[TAG:Test]` Write unit tests for `transactionService`, `categoryService`. — _Done when:_ Service CRUD covered.
-- [ ] **P4.12** `[TAG:Test]` Write integration tests: add transaction, search/filter, toggle recurring. — _Done when:_ Key flows covered.
+- [x] ~~**P4.1** `[TAG:Toast]` Create `Toast.tsx` component: success/error/warning/info variants, auto-dismiss 4s, stacking. — _Done when:_ Toast renders, auto-dismisses.~~
+- [x] ~~**P4.2** `[TAG:Toast]` Create `ConfirmDialog.tsx` component: modal with Cancel (default focus) + Confirm. — _Done when:_ Dialog renders with proper focus.~~
+- [x] ~~**P4.3** `[TAG:Toast]` Replace all `alert()` calls with Toast. — _Done when:_ Zero `alert()` in codebase.~~
+- [x] ~~**P4.4** `[TAG:Toast]` Replace all `window.confirm()` calls with ConfirmDialog. — _Done when:_ Zero `confirm()` in codebase.~~
+- [x] ~~**P4.5** `[TAG:Error]` Add React Error Boundary wrapping route pages. Show "Something went wrong" + retry. — _Done when:_ Thrown error shows boundary UI.~~
+- [x] ~~**P4.6** `[TAG:Loading]` Create `Skeleton.tsx` with shimmer animation. — _Done when:_ Skeleton component exists.~~
+- [x] ~~**P4.7** `[TAG:Loading]` Add skeleton states to Dashboard, Ma'aser, Recurring pages during data fetch. — _Done when:_ Skeletons shown while loading.~~
+- [x] ~~**P4.8** `[TAG:Demo]` Extend `demoStorage.ts` for `categories`, `recurring_templates`. — _Done when:_ Demo mode supports new models.~~
+- [x] ~~**P4.9** `[TAG:Demo]` Seed demo mode with sample recurring templates + custom categories. — _Done when:_ Demo shows realistic data.~~
+- [x] ~~**P4.10** `[TAG:Test]` Set up Vitest + React Testing Library. Create sample passing test. — _Done when:_ `npm test` passes.~~
+- [x] ~~**P4.11** `[TAG:Test]` Write unit tests for `transactionService`, `categoryService`. — _Done when:_ Service CRUD covered.~~
+- [x] ~~**P4.12** `[TAG:Test]` Write integration tests: add transaction, search/filter, toggle recurring. — _Done when:_ Key flows covered.~~
 
 ---
 

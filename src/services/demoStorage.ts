@@ -1,5 +1,5 @@
 import { Category, RecurringTemplate, Transaction, TransactionType } from '../types';
-import { buildDefaultCategorySeeds } from '../lib/categorySeed';
+import { buildDemoCategorySeeds } from '../lib/categorySeed';
 
 export const DEMO_SESSION_KEY = 'family-budget-demo-session-v1';
 export const DEMO_TX_STORAGE_KEY = 'family-budget-demo-v1';
@@ -166,7 +166,7 @@ export function readDemoCategories(): Category[] {
 
 function seedDemoCategoriesToStorage(): Category[] {
   const now = new Date().toISOString();
-  const seeds = buildDefaultCategorySeeds();
+  const seeds = buildDemoCategorySeeds();
   const rows: Category[] = seeds.map((s) => ({
     id: newDemoCategoryId(),
     familyId: 'demo',
@@ -248,10 +248,10 @@ export function readDemoRecurringTemplates(): RecurringTemplate[] {
   if (typeof localStorage === 'undefined') return [];
   try {
     const raw = localStorage.getItem(DEMO_RECURRING_TEMPLATES_KEY);
-    if (!raw) return [];
+    if (!raw) return seedDemoRecurringTemplatesToStorage();
 
     const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
+    if (!Array.isArray(parsed)) return seedDemoRecurringTemplatesToStorage();
 
     const out: RecurringTemplate[] = [];
     for (const item of parsed) {
@@ -260,10 +260,199 @@ export function readDemoRecurringTemplates(): RecurringTemplate[] {
         if (t) out.push(t);
       }
     }
+    if (out.length === 0) return seedDemoRecurringTemplatesToStorage();
     return out;
   } catch {
-    return [];
+    return seedDemoRecurringTemplatesToStorage();
   }
+}
+
+function newDemoTemplateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `demo-rt-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function seedDemoRecurringTemplatesToStorage(): RecurringTemplate[] {
+  const now = new Date().toISOString();
+  const y = new Date().getFullYear();
+  const startMonth = `${y}-01`;
+  const currentMonth = `${y}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+  const templates: RecurringTemplate[] = [
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Monthly Rent',
+      amount: 5200,
+      category: 'Housing',
+      type: TransactionType.EXPENSE,
+      currency: 'ILS',
+      dayOfMonth: 1,
+      isMaaserDeductible: false,
+      isMaaserPayment: false,
+      isTaxDeductible: false,
+      isInvestment: false,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: null,
+      lastGeneratedMonth: currentMonth,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Electricity Bill',
+      amount: 450,
+      category: 'Bills',
+      type: TransactionType.EXPENSE,
+      currency: 'ILS',
+      dayOfMonth: 15,
+      isMaaserDeductible: false,
+      isMaaserPayment: false,
+      isTaxDeductible: false,
+      isInvestment: false,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: null,
+      lastGeneratedMonth: currentMonth,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Internet Subscription',
+      amount: 120,
+      category: 'Bills',
+      type: TransactionType.EXPENSE,
+      currency: 'ILS',
+      dayOfMonth: 5,
+      isMaaserDeductible: false,
+      isMaaserPayment: false,
+      isTaxDeductible: false,
+      isInvestment: false,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: null,
+      lastGeneratedMonth: currentMonth,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Gym Membership',
+      amount: 250,
+      category: 'Health',
+      type: TransactionType.EXPENSE,
+      currency: 'ILS',
+      dayOfMonth: 1,
+      isMaaserDeductible: false,
+      isMaaserPayment: false,
+      isTaxDeductible: false,
+      isInvestment: false,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: 6,
+      lastGeneratedMonth: currentMonth,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Streaming Service (USD)',
+      amount: 15,
+      category: 'Entertainment',
+      type: TransactionType.EXPENSE,
+      currency: 'USD',
+      dayOfMonth: 10,
+      isMaaserDeductible: false,
+      isMaaserPayment: false,
+      isTaxDeductible: false,
+      isInvestment: false,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: null,
+      lastGeneratedMonth: currentMonth,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Monthly Charity',
+      amount: 500,
+      category: 'Maaser',
+      type: TransactionType.EXPENSE,
+      currency: 'ILS',
+      dayOfMonth: 20,
+      isMaaserDeductible: false,
+      isMaaserPayment: true,
+      isTaxDeductible: false,
+      isInvestment: false,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: null,
+      lastGeneratedMonth: currentMonth,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Index Fund Contribution',
+      amount: 500,
+      category: 'Investments',
+      type: TransactionType.EXPENSE,
+      currency: 'USD',
+      dayOfMonth: 25,
+      isMaaserDeductible: false,
+      isMaaserPayment: false,
+      isTaxDeductible: false,
+      isInvestment: true,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: null,
+      lastGeneratedMonth: currentMonth,
+      cancelledAt: null,
+      createdAt: now,
+      updatedAt: now,
+    },
+    {
+      id: newDemoTemplateId(),
+      familyId: 'demo',
+      description: 'Old Phone Plan (Cancelled)',
+      amount: 80,
+      category: 'Bills',
+      type: TransactionType.EXPENSE,
+      currency: 'ILS',
+      dayOfMonth: 10,
+      isMaaserDeductible: false,
+      isMaaserPayment: false,
+      isTaxDeductible: false,
+      isInvestment: false,
+      isTaxSavings: false,
+      startMonth,
+      remainingPayments: null,
+      lastGeneratedMonth: `${y}-03`,
+      cancelledAt: `${y}-04-01T00:00:00Z`,
+      createdAt: now,
+      updatedAt: now,
+    },
+  ];
+
+  writeDemoRecurringTemplates(templates);
+  return templates;
 }
 
 export function writeDemoRecurringTemplates(templates: RecurringTemplate[]): void {

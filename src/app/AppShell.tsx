@@ -30,6 +30,7 @@ import { ShellProvider, useShell } from '../contexts/ShellContext';
 import { YearSelector } from '../components/YearSelector';
 import { FamilyManager } from '../components/FamilyManager';
 import { TransactionForm, type CreateRecurringTemplateInput } from '../components/TransactionForm';
+import { ErrorBoundary } from '../components/ErrorBoundary';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import type { Transaction, TransactionType } from '../types';
 
@@ -403,7 +404,9 @@ const AppShellInner: React.FC = () => {
           ))}
         </nav>
 
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       {isFormOpen && (
