@@ -28,7 +28,6 @@ export const MaaserPage: React.FC = () => {
   const [editPrefill, setEditPrefill] = useState<{
     date: string;
     amount: string;
-    amountSide: 'credit' | 'debt';
   } | null>(null);
 
   const offsetEligibility = useMemo(
@@ -86,15 +85,13 @@ export const MaaserPage: React.FC = () => {
   const openEditOffsetForm = useCallback(
     (pairId: string) => {
       const legs = transactions.filter((t) => t.maaserOffsetPairId === pairId);
-      const debtLeg = legs.find((t) => t.isMaaserPayment && !t.isMaaserCrossCurrencyCredit);
       const creditLeg = legs.find((t) => t.isMaaserCrossCurrencyCredit);
-      if (!debtLeg || !creditLeg) return;
+      if (!creditLeg) return;
 
       setEditingPairId(pairId);
       setEditPrefill({
-        date: debtLeg.date,
-        amount: String(debtLeg.amount),
-        amountSide: 'debt',
+        date: creditLeg.date,
+        amount: String(creditLeg.amount),
       });
       setOffsetFormOpen(true);
     },
@@ -203,7 +200,6 @@ export const MaaserPage: React.FC = () => {
           editingPairId={editingPairId}
           initialDate={editPrefill?.date}
           initialAmount={editPrefill?.amount}
-          initialAmountSide={editPrefill?.amountSide}
           onSuccess={() => {
             void refresh();
             addToast(

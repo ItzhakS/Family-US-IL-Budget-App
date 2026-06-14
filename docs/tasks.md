@@ -110,7 +110,7 @@
 **Not in current scope.** Re-enter when product prioritizes.
 
 - [ ] **PX.1** `[TAG:Deferred]` **Bulk import** (CSV/image/PDF parsing) — **re-entry:** UX for review queue + error budget defined.
-- [ ] **PX.2** `[TAG:Deferred]` **Ma'aser cross-currency credit** — **re-entry:** accounting rules signed off.
+- [X] **PX.2** `[TAG:Deferred]` **Ma'aser cross-currency credit** — **re-entry:** accounting rules signed off.
 - [ ] **PX.3** `[TAG:Deferred]` **Settings page consolidation** — **re-entry:** after P1.9, P1.10, P3.5, P3.8 complete.
 
 ---
