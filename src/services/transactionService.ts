@@ -19,6 +19,9 @@ const ADDITIVE_TRANSACTION_COLUMNS = [
   'recurring_cancelled_at',
   'recurring_remaining_payments',
   'recurring_template_id',
+  'is_maaser_cross_currency_credit',
+  'maaser_offset_pair_id',
+  'maaser_offset_fx_breakdown',
 ] as const;
 
 function isMissingSchemaColumnError(error: unknown): boolean {
@@ -130,6 +133,9 @@ export function mapRowToTransaction(t: Record<string, unknown>): Transaction {
         : null,
     isMaaserDeductible: Boolean(t.is_maaser_deductible),
     isMaaserPayment: Boolean(t.is_maaser_payment),
+    isMaaserCrossCurrencyCredit: Boolean(t.is_maaser_cross_currency_credit),
+    maaserOffsetPairId: parseOptionalString(t.maaser_offset_pair_id),
+    maaserOffsetFxBreakdown: parseMaaserOffsetFxBreakdown(t.maaser_offset_fx_breakdown),
     isNonMaaserIncome: Boolean(t.is_non_maaser_income),
     isTaxDeductible: Boolean(t.is_tax_deductible),
     isInvestment: Boolean(t.is_investment),
@@ -152,6 +158,14 @@ function parseOptionalIso(v: unknown): string | null {
   return String(v);
 }
 
+function parseMaaserOffsetFxBreakdown(
+  v: unknown
+): import('../types').MaaserOffsetFxSlice[] | null {
+  if (v == null) return null;
+  if (!Array.isArray(v)) return null;
+  return v as import('../types').MaaserOffsetFxSlice[];
+}
+
 function parseOptionalInt(v: unknown): number | null {
   if (v === null || v === undefined || String(v).trim() === '') return null;
   const n = Number(v);
@@ -172,6 +186,9 @@ function transactionToInsertRow(
     is_recurring: tx.isRecurring ?? false,
     is_maaser_deductible: tx.isMaaserDeductible ?? false,
     is_maaser_payment: tx.isMaaserPayment ?? false,
+    is_maaser_cross_currency_credit: tx.isMaaserCrossCurrencyCredit ?? false,
+    maaser_offset_pair_id: tx.maaserOffsetPairId ?? null,
+    maaser_offset_fx_breakdown: tx.maaserOffsetFxBreakdown ?? null,
     is_non_maaser_income: tx.isNonMaaserIncome ?? false,
     is_tax_deductible: tx.isTaxDeductible ?? false,
     is_investment: tx.isInvestment ?? false,
@@ -196,6 +213,9 @@ function transactionToUpdateRow(tx: Omit<Transaction, 'id'>): Record<string, unk
     is_recurring: tx.isRecurring ?? false,
     is_maaser_deductible: tx.isMaaserDeductible ?? false,
     is_maaser_payment: tx.isMaaserPayment ?? false,
+    is_maaser_cross_currency_credit: tx.isMaaserCrossCurrencyCredit ?? false,
+    maaser_offset_pair_id: tx.maaserOffsetPairId ?? null,
+    maaser_offset_fx_breakdown: tx.maaserOffsetFxBreakdown ?? null,
     is_non_maaser_income: tx.isNonMaaserIncome ?? false,
     is_tax_deductible: tx.isTaxDeductible ?? false,
     is_investment: tx.isInvestment ?? false,
@@ -337,6 +357,37 @@ export async function deleteTransaction(id: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function deleteByMaaserOffsetPairId(pairId: string): Promise<void> {
+  if (isDemoSessionActive()) {
+    writeDemoTransactions(
+      readDemoTransactions().filter((t) => t.maaserOffsetPairId !== pairId)
+    );
+    return;
+  }
+  if (!isSupabaseConfigured) throw new Error('Supabase not configured');
+
+  const { error } = await supabase
+    .from('transactions')
+    .delete()
+    .eq('maaser_offset_pair_id', pairId);
+  if (error) throw error;
+}
+
+export async function getByMaaserOffsetPairId(pairId: string): Promise<Transaction[]> {
+  if (isDemoSessionActive()) {
+    return readDemoTransactions().filter((t) => t.maaserOffsetPairId === pairId);
+  }
+  if (!isSupabaseConfigured) return [];
+
+  const { data, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('maaser_offset_pair_id', pairId);
+
+  if (error) throw error;
+  return (data || []).map((t) => mapRowToTransaction(t as Record<string, unknown>));
+}
+
 /**
  * Link a set of existing transaction rows to a recurring template (legacy migration helper).
  * Skips rows that are already linked to a different template.
@@ -379,8 +430,8 @@ export async function bulkCreate(items: Omit<Transaction, 'id'>[]): Promise<Tran
   const fx = await snapshotFxForPersist();
   const withFx = items.map((tx) => ({
     ...tx,
-    exchangeRateUsdToIls: fx.exchangeRateUsdToIls,
-    fxRateDate: fx.fxRateDate,
+    exchangeRateUsdToIls: tx.exchangeRateUsdToIls ?? fx.exchangeRateUsdToIls,
+    fxRateDate: tx.fxRateDate ?? fx.fxRateDate,
   }));
 
   if (isDemoSessionActive()) {

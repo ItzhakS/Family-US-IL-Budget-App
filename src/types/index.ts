@@ -40,6 +40,12 @@ export interface Transaction {
   // Specific Flags
   isMaaserDeductible?: boolean; // Business exp that reduces Ma'aser obligation (Show in Maaser tab only)
   isMaaserPayment?: boolean;    // Payment to charity (Show in Maaser tab)
+  /** Cross-currency offset: consumes ma'aser credit in this currency (not a charity payment). */
+  isMaaserCrossCurrencyCredit?: boolean;
+  /** Links the two legs of a cross-currency ma'aser offset. */
+  maaserOffsetPairId?: string | null;
+  /** FIFO bucket slices used for this offset (stored on debt leg). */
+  maaserOffsetFxBreakdown?: MaaserOffsetFxSlice[] | null;
   /** When true, INCOME does not count toward Ma'aser obligation (loan, reimbursement). Default: counts for Ma'aser. */
   isNonMaaserIncome?: boolean;
   isTaxDeductible?: boolean;    // Business exp for Tax filing (Show in Inv/Tax tab only)
@@ -109,6 +115,13 @@ export interface ReceiptData {
   merchant?: string;
   category?: string;
   currency?: Currency;
+}
+
+export interface MaaserOffsetFxSlice {
+  month: string;
+  creditAmount: number;
+  avgRateUsdToIls: number;
+  debtAmount: number;
 }
 
 export interface MaaserMonthStats {

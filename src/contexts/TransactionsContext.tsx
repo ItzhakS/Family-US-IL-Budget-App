@@ -20,6 +20,7 @@ interface TransactionsContextValue {
   add: (tx: Omit<Transaction, 'id'>) => Promise<void>;
   update: (id: string, tx: Omit<Transaction, 'id'>) => Promise<void>;
   remove: (id: string) => Promise<void>;
+  removeByMaaserOffsetPairId: (pairId: string) => Promise<void>;
   bulkCreate: (items: Omit<Transaction, 'id'>[]) => Promise<void>;
 }
 
@@ -125,6 +126,23 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     [transactions]
   );
 
+  const removeByMaaserOffsetPairId = useCallback(
+    async (pairId: string) => {
+      setError(null);
+      const previous = transactions;
+      setTransactions((prev) => prev.filter((t) => t.maaserOffsetPairId !== pairId));
+      try {
+        await transactionService.deleteByMaaserOffsetPairId(pairId);
+      } catch (e) {
+        console.error('Error deleting offset pair:', e);
+        setTransactions(previous);
+        setError(e instanceof Error ? e.message : 'Failed to delete offset');
+        await refresh();
+      }
+    },
+    [transactions, refresh]
+  );
+
   const bulkCreate = useCallback(
     async (items: Omit<Transaction, 'id'>[]) => {
       setError(null);
@@ -150,6 +168,7 @@ export const TransactionsProvider: React.FC<{ children: React.ReactNode }> = ({
     add,
     update,
     remove,
+    removeByMaaserOffsetPairId,
     bulkCreate,
   };
 

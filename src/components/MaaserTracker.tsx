@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Transaction, TransactionType, Currency, MaaserMonthStats } from '../types';
-import { Heart, ChevronDown, ChevronUp, AlertCircle, Edit, Trash2, Copy } from 'lucide-react';
+import { Transaction, Currency } from '../types';
+import { computeMaaserMonthlyStatsNewestFirst } from '../lib/maaserCalculations';
+import { Heart, ChevronDown, ChevronUp, AlertCircle, Edit, Trash2, Copy, ArrowLeftRight } from 'lucide-react';
 
 /** Fund card + month-level breakdown (not affected by transaction-list filters). */
 export const MaaserSummaryPanel: React.FC<{
@@ -10,62 +11,10 @@ export const MaaserSummaryPanel: React.FC<{
   const currencySymbol = currency === 'ILS' ? '₪' : '$';
   const [expandedMonth, setExpandedMonth] = useState<string | null>(null);
 
-  const monthlyStats = useMemo(() => {
-    const grouped: Record<string, Transaction[]> = {};
-    const allMonths = new Set<string>();
-
-    transactions
-      .filter((t) => t.currency === currency)
-      .forEach((t) => {
-        const monthKey = t.date.substring(0, 7);
-        allMonths.add(monthKey);
-        if (!grouped[monthKey]) grouped[monthKey] = [];
-        grouped[monthKey].push(t);
-      });
-
-    const sortedMonths = Array.from(allMonths).sort();
-
-    const stats: MaaserMonthStats[] = [];
-    let runningBalance = 0;
-
-    sortedMonths.forEach((month) => {
-      const monthTx = grouped[month];
-
-      const income = monthTx
-        .filter(
-          (t) => t.type === TransactionType.INCOME && !t.isNonMaaserIncome
-        )
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      const deductibleTx = monthTx.filter((t) => t.type === TransactionType.EXPENSE && t.isMaaserDeductible);
-
-      const deductions = deductibleTx.reduce((sum, t) => sum + t.amount, 0);
-
-      const netProfit = income - deductions;
-      const obligation = Math.max(0, netProfit * 0.1);
-
-      const paid = monthTx
-        .filter((t) => t.type === TransactionType.EXPENSE && t.isMaaserPayment)
-        .reduce((sum, t) => sum + t.amount, 0);
-
-      const monthlyBalance = obligation - paid;
-      runningBalance += monthlyBalance;
-
-      stats.push({
-        month,
-        income,
-        deductions,
-        deductibleTransactions: deductibleTx,
-        netProfit,
-        obligation,
-        paid,
-        monthlyBalance,
-        runningBalance,
-      });
-    });
-
-    return stats.reverse();
-  }, [transactions, currency]);
+  const monthlyStats = useMemo(
+    () => computeMaaserMonthlyStatsNewestFirst(transactions, currency),
+    [transactions, currency]
+  );
 
   const currentBalance = monthlyStats.length > 0 ? monthlyStats[0].runningBalance : 0;
 
@@ -196,6 +145,39 @@ function maaserSym(c: Currency) {
   return c === 'ILS' ? '₪' : '$';
 }
 
+function maaserRoleBadge(t: Transaction): {
+  label: string;
+  className: string;
+  amountClassName: string;
+} {
+  if (t.isMaaserCrossCurrencyCredit) {
+    return {
+      label: 'Cross-currency offset (credit)',
+      className: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300',
+      amountClassName: 'text-indigo-600 dark:text-indigo-400',
+    };
+  }
+  if (t.maaserOffsetPairId && t.isMaaserPayment) {
+    return {
+      label: 'Cross-currency offset (debt)',
+      className: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300',
+      amountClassName: 'text-indigo-600 dark:text-indigo-400',
+    };
+  }
+  if (t.isMaaserPayment) {
+    return {
+      label: 'Charity Payment',
+      className: 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300',
+      amountClassName: 'text-pink-600 dark:text-pink-400',
+    };
+  }
+  return {
+    label: 'Deductible',
+    className: 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300',
+    amountClassName: 'text-amber-600 dark:text-amber-400',
+  };
+}
+
 /** Ma&apos;aser-related transaction rows (deductibles + payments), after list filters. */
 export const MaaserTransactionListPanel: React.FC<{
   transactions: Transaction[];
@@ -224,6 +206,8 @@ export const MaaserTransactionListPanel: React.FC<{
           <div className="lg:hidden divide-y divide-gray-100 dark:divide-gray-700">
             {rows.map((t) => {
               const currencySymbol = maaserSym(t.currency);
+              const role = maaserRoleBadge(t);
+              const isOffset = !!t.maaserOffsetPairId;
               return (
                 <div key={t.id} className="p-4 space-y-2">
                   <div className="flex justify-between gap-3 text-sm">
@@ -233,18 +217,20 @@ export const MaaserTransactionListPanel: React.FC<{
                     )}
                   </div>
                   <p className="text-sm font-medium text-gray-900 dark:text-gray-50 break-words">{t.description}</p>
+                  {isOffset && (
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                      <ArrowLeftRight size={12} />
+                      Linked cross-currency offset
+                    </p>
+                  )}
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        t.isMaaserPayment ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                      }`}
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${role.className}`}
                     >
-                      {t.isMaaserPayment ? 'Charity Payment' : 'Deductible'}
+                      {role.label}
                     </span>
                     <span
-                      className={`text-sm font-bold tabular-nums ${
-                        t.isMaaserPayment ? 'text-pink-600 dark:text-pink-400' : 'text-amber-600 dark:text-amber-400'
-                      }`}
+                      className={`text-sm font-bold tabular-nums ${role.amountClassName}`}
                     >
                       {currencySymbol}
                       {t.amount.toLocaleString()}
@@ -252,7 +238,7 @@ export const MaaserTransactionListPanel: React.FC<{
                   </div>
                   {(onCopy || onEdit || onDelete) && (
                     <div className="flex justify-end gap-2 pt-1">
-                      {onCopy && (
+                      {onCopy && !isOffset && (
                         <button
                           type="button"
                           onClick={() => onCopy(t.id)}
@@ -318,6 +304,8 @@ export const MaaserTransactionListPanel: React.FC<{
               <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                 {rows.map((t) => {
                   const currencySymbol = maaserSym(t.currency);
+                  const role = maaserRoleBadge(t);
+                  const isOffset = !!t.maaserOffsetPairId;
                   return (
                     <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
                       <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{t.date}</td>
@@ -326,27 +314,28 @@ export const MaaserTransactionListPanel: React.FC<{
                       )}
                       <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-50 font-medium max-w-xs break-words">
                         {t.description}
+                        {isOffset && (
+                          <span className="block text-xs text-indigo-500 dark:text-indigo-400 mt-0.5">
+                            Linked offset
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm">
                         <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            t.isMaaserPayment ? 'bg-pink-100 dark:bg-pink-900/30 text-pink-800 dark:text-pink-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300'
-                          }`}
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${role.className}`}
                         >
-                          {t.isMaaserPayment ? 'Charity Payment' : 'Deductible'}
+                          {role.label}
                         </span>
                       </td>
                       <td
-                        className={`px-4 py-3 text-sm font-bold text-right whitespace-nowrap ${
-                          t.isMaaserPayment ? 'text-pink-600 dark:text-pink-400' : 'text-amber-600 dark:text-amber-400'
-                        }`}
+                        className={`px-4 py-3 text-sm font-bold text-right whitespace-nowrap ${role.amountClassName}`}
                       >
                         {currencySymbol}
                         {t.amount.toLocaleString()}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {onCopy && (
+                          {onCopy && !isOffset && (
                             <button
                               type="button"
                               onClick={() => onCopy(t.id)}
@@ -362,8 +351,8 @@ export const MaaserTransactionListPanel: React.FC<{
                               type="button"
                               onClick={() => onEdit(t.id)}
                               className="text-gray-400 dark:text-gray-500 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 rounded"
-                              title="Edit transaction"
-                              aria-label="Edit transaction"
+                              title={isOffset ? 'Edit offset' : 'Edit transaction'}
+                              aria-label={isOffset ? 'Edit offset' : 'Edit transaction'}
                             >
                               <Edit size={16} />
                             </button>
@@ -373,8 +362,8 @@ export const MaaserTransactionListPanel: React.FC<{
                               type="button"
                               onClick={() => onDelete(t.id)}
                               className="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 rounded"
-                              title="Delete transaction"
-                              aria-label="Delete transaction"
+                              title={isOffset ? 'Delete offset pair' : 'Delete transaction'}
+                              aria-label={isOffset ? 'Delete offset pair' : 'Delete transaction'}
                             >
                               <Trash2 size={16} />
                             </button>
